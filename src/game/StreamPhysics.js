@@ -28,7 +28,11 @@ export const PHYS = {
   surgeCost: 0.06, // fraction of volume per second
   surgeMinVolume: 25000,
   absorbPush: 9, // m/s² while swallowing still water (it feels like a gulp of energy)
-  steerAngle: 1.15, // rad: full steer = 66° off the valley line
+  steerAngle: 1.55, // rad: full steer = 89° off the valley line (you can cross the slope)
+  steerFree: 0.6, // how much the valley's pull is released while you actively steer
+  climbSteer: 0.55, // |steer| above this, a fast river pushes over a saddle instead of stalling
+  climbSpeed: 24, //   …if it is at least this fast
+  climbSlope: 0.17, //   …up to this uphill slope
   followGain: 3.2,
   turnMaxSmall: 2.7, // rad/s for small streams
   turnMaxBig: 1.3, // rad/s for giants
@@ -221,13 +225,18 @@ export class StreamPhysics {
     const size01 = THREE.MathUtils.clamp((vf + 0.5) / 2.5, 0, 1);
     let turnMax = PHYS.turnMaxSmall + (PHYS.turnMaxBig - PHYS.turnMaxSmall) * size01;
     turnMax = Math.min(turnMax, PHYS.latAccelMax / Math.max(sp, 1));
-    const wf = THREE.MathUtils.clamp(PHYS.followGain * delta, -turnMax, turnMax);
+    // steering hard releases the valley's grip, so the player really picks the line
+    const free = 1 - PHYS.steerFree * Math.abs(steer);
+    const wf = THREE.MathUtils.clamp(PHYS.followGain * free * delta, -turnMax, turnMax);
     const lat = -(_g.x * -hz + _g.y * hx); // downhill component towards the right
-    const wg = (PHYS.gravTurn * PHYS.g * lat) / Math.max(sp, 5);
+    const wg = (PHYS.gravTurn * free * PHYS.g * lat) / Math.max(sp, 5);
     let w = THREE.MathUtils.clamp(wf + wg, -3.2, 3.2);
 
     const slope = -(_g.x * hx + _g.y * hz); // + downhill along heading
-    const uphill = slope < -PHYS.uphillSlope;
+    // a fast river that is deliberately steered can pile up and spill over a low saddle
+    const climbing = Math.abs(steer) > PHYS.climbSteer && sp > PHYS.climbSpeed && slope > -PHYS.climbSlope;
+    s.climbing = climbing;
+    const uphill = slope < -PHYS.uphillSlope && !climbing;
     if (uphill && sp < 4) {
       // stalled against a rise: swing round towards the fall line
       _h.set(-_g.x, -_g.y).normalize();

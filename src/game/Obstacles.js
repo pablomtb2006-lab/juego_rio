@@ -78,15 +78,35 @@ export class Obstacles {
         }
       }
     }
+    // the short branch of every fork gets extra dams, so "CORTA · PELIGROSA" is the truth
+    for (const f of this.game.forks?.list ?? []) {
+      const br = f.shortBranch;
+      if (!br) continue;
+      const pts = br.points;
+      for (const frac of [0.08, 0.2, 0.32, 0.45, 0.58, 0.72, 0.85]) {
+        const i = Math.round(frac * (pts.length - 2));
+        if (i < 2 || i >= pts.length - 1) continue;
+        const p = pts[i];
+        const h = terrain.heightAt(p.x, p.z);
+        if (h < 25 || hydro.basinDepthAt(p.x, p.z) > 0.8) continue;
+        const dx = pts[i + 1].x - pts[i - 1].x;
+        const dz = pts[i + 1].z - pts[i - 1].z;
+        const l = Math.hypot(dx, dz) || 1;
+        const rd = hydro.routeDistAt(p.x, p.z);
+        maxRoute = Math.max(maxRoute, rd);
+        cand.push({ x: p.x, z: p.z, h, ch: hydro.channelAt(p.x, p.z), rd, dx: dx / l, dz: dz / l, score: 4 + rand(), onShort: true });
+      }
+    }
+
     const lakes = this.ctx.world?.lakes?.bodies ?? [];
     cand.sort((a, b) => b.score - a.score);
     for (const c of cand) {
-      if (this.dams.length >= 48) break;
-      if (this.dams.some((d) => Math.hypot(d.x - c.x, d.z - c.z) < 420)) continue;
+      if (this.dams.length >= 64) break;
+      if (this.dams.some((d) => Math.hypot(d.x - c.x, d.z - c.z) < (c.onShort ? 300 : 420))) continue;
       if (lakes.some((b) => Math.hypot(b.x - c.x, b.z - c.z) < b.radius + 90)) continue;
       const f = Math.min(1, c.rd / Math.max(maxRoute, 3000));
       // weak up high (you are small there), tough near the coast (you should be huge)
-      const strength = Math.round((140000 + 1150000 * Math.pow(1 - f, 1.5)) * (0.75 + rand() * 0.5) / 10000) * 10000;
+      const strength = Math.round((140000 + 1150000 * Math.pow(1 - f, 1.5)) * (0.75 + rand() * 0.5) * (c.onShort ? 1.45 : 1) / 10000) * 10000;
       const width = THREE.MathUtils.clamp(36 + c.ch * 70, 40, 105);
       this.dams.push({
         id: this.dams.length,
@@ -96,6 +116,7 @@ export class Obstacles {
         dir: new THREE.Vector2(c.dx, c.dz),
         width,
         strength,
+        onShort: !!c.onShort,
         broken: false,
         brokenAt: -1,
         seed: rand(),

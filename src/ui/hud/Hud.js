@@ -27,6 +27,10 @@ export class Hud {
         </div>
         <div class="goals" data-ref="goals"></div>
       </div>
+      <div class="fork" data-ref="fork">
+        <div class="fork__side fork__side--l" data-ref="forkL"><i>◀</i><b></b><small></small></div>
+        <div class="fork__side fork__side--r" data-ref="forkR"><i>▶</i><b></b><small></small></div>
+      </div>
       <div class="drought" data-ref="drought">
         <div class="drought__bar"><i data-ref="droughtFill"></i></div>
         <div class="drought__row"><b data-ref="droughtTime">0</b><span data-ref="droughtWho"></span></div>
@@ -135,6 +139,31 @@ export class Hud {
     if (this.ui.ctx.params.capture) el.classList.add('is-in');
   }
 
+  /** The fork prompt (game/Forks.js): which way out is which, shown on the side it is on. */
+  renderFork() {
+    const game = this.ui.ctx.game;
+    const p = game.player;
+    const near = p?.phase === 'flow' ? game.forks?.nearest(p, 420) : null;
+    this.r.fork.classList.toggle('is-on', !!near);
+    if (!near) {
+      this._forkKey = null;
+      return;
+    }
+    const [a, b] = near.fork.branches;
+    // the branch that leans to the player's right goes on the right
+    const side = (br) => br.dir.x * p.heading.y - br.dir.y * p.heading.x;
+    const [left, right] = side(a) < side(b) ? [a, b] : [b, a];
+    const key = `${near.fork.id}:${left.label}`;
+    if (key !== this._forkKey) {
+      this._forkKey = key;
+      for (const [el, br] of [[this.r.forkL, left], [this.r.forkR, right]]) {
+        el.style.setProperty('--c', `#${br.color.toString(16).padStart(6, '0')}`);
+        el.querySelector('b').textContent = t(`fork.${br.label}`);
+        el.querySelector('small').textContent = `${(br.length / 1000).toFixed(1)} km`;
+      }
+    }
+  }
+
   /** The drought countdown (game/Drought.js): who gets swept next, and in how long. */
   renderDrought() {
     const d = this.ui.ctx.game.drought;
@@ -177,6 +206,7 @@ export class Hud {
 
     this.renderGoals();
     this.renderDrought();
+    this.renderFork();
 
     // --- distance & litres (top centre, like the trailer) ---
     let dist = p.phase === 'drop' ? terrain.distToSea(p.pos.x, p.pos.z) : p.distToSea;

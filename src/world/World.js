@@ -5,6 +5,7 @@ import { StreamRenderer } from './water/StreamRenderer.js';
 import { SkyWater } from './water/SkyWater.js';
 import { Vegetation } from './props/Vegetation.js';
 import { Landmarks } from './props/Landmarks.js';
+import { ForkGates } from './props/ForkGates.js';
 
 /**
  * Builds and updates everything that lives in the world (not the player logic).
@@ -20,8 +21,9 @@ export class World {
     this.skyWater = new SkyWater(ctx);
     this.vegetation = new Vegetation(ctx);
     this.landmarks = new Landmarks(ctx);
+    this.forkGates = new ForkGates(ctx);
     this.streams = new StreamRenderer(ctx);
-    this.parts = [this.terrainRenderer, this.ocean, this.lakes, this.skyWater, this.vegetation, this.landmarks, this.streams];
+    this.parts = [this.terrainRenderer, this.ocean, this.lakes, this.skyWater, this.vegetation, this.landmarks, this.forkGates, this.streams];
   }
 
   async init(onProgress = () => {}) {

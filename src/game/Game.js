@@ -5,6 +5,7 @@ import { applyUpgrades } from './upgrades.js';
 import { difficultyFor, FULL_DIFFICULTY } from './difficulty.js';
 import { Objectives } from './Objectives.js';
 import { Drought } from './Drought.js';
+import { Forks } from './Forks.js';
 import { getLang } from '../ui/i18n.js';
 import { StreamPhysics } from './StreamPhysics.js';
 import { Rules, RULES } from './Rules.js';
@@ -107,8 +108,11 @@ export class Game {
     const { terrain } = this.ctx;
     this.hydro = new Hydrology(terrain);
     this.dropZone = computeDropZone(terrain, this.hydro);
+    this.forks = new Forks(this);
+    this.forks.detect();
     this.obstacles = new Obstacles(this);
-    this.obstacles.build();
+    this.obstacles.build(); // dams are biased onto the short branches…
+    this.forks.classify(); // …so "CORTA · PELIGROSA" is true before it is signposted
   }
 
   get aliveCount() {
