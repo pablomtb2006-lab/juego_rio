@@ -3,28 +3,128 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#0a4a6a" />
-    <meta name="description" content="Río Royale — battle royale de ríos: cae del cielo, absorbe lagos y sé el primero en llegar al mar." />
-    <title>Río Royale</title>
+    <title>Río Royale — Be the first to the sea</title>
+    <meta name="description" content="Río Royale: a battle royale where every player is a stream of water. Fall from the sky, swallow lakes to grow, cut off rivals and be the first to reach the sea." />
+    <meta name="theme-color" content="#0a3a5c" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="application-name" content="Río Royale" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Río Royale" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Río Royale — Be the first to the sea" />
+    <meta property="og:description" content="Battle royale, but you're a river. Swallow lakes, cut off rivals, reach the sea first." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Río Royale" />
+    <meta name="twitter:description" content="Battle royale, but you're a river. Be the first to the sea." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
     <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #0a2a3a; touch-action: none; }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #06202e; touch-action: none; overscroll-behavior: none; }
+      body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
       canvas { display: block; }
+
       #loading {
-        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 16px; background: radial-gradient(circle at 50% 40%, #1c6c8f, #06202e); color: #fff;
-        font-family: system-ui, sans-serif; z-index: 10; transition: opacity 0.6s;
+        position: fixed; inset: 0; z-index: 10; overflow: hidden;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background:
+          radial-gradient(120% 70% at 50% 35%, #2c8fc0 0%, #13557f 38%, #08263d 75%, #04131f 100%);
+        color: #fff; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        transition: opacity .6s ease, visibility .6s;
       }
-      #loading .bar { width: min(320px, 70vw); height: 10px; border-radius: 6px; background: rgba(255,255,255,0.15); overflow: hidden; }
-      #loading .fill { height: 100%; width: 0; background: linear-gradient(90deg, #35d0d6, #ffd23f); transition: width 0.2s; }
-      #loading .label { font-weight: 700; letter-spacing: 0.5px; opacity: 0.85; }
+      #loading.is-done { opacity: 0; visibility: hidden; }
+      #loading .rays {
+        position: absolute; left: 50%; top: 38%; width: 220vmax; height: 220vmax; transform: translate(-50%, -50%);
+        background: repeating-conic-gradient(rgba(255,255,255,.06) 0 6deg, transparent 6deg 18deg);
+        -webkit-mask: radial-gradient(circle, #000, transparent 40%); mask: radial-gradient(circle, #000, transparent 40%);
+        animation: ld-spin 60s linear infinite;
+      }
+      #loading .waves { position: absolute; left: 0; right: 0; bottom: 0; height: 22vh; overflow: hidden; }
+      #loading .waves i {
+        position: absolute; left: -50%; width: 200%; height: 100%; bottom: -40%;
+        background: radial-gradient(60px 26px at 60px 0, transparent 98%, currentColor 100%) repeat-x;
+        background-size: 120px 100%;
+        animation: ld-wave 7s linear infinite;
+      }
+      #loading .waves i:nth-child(1) { color: rgba(53,208,214,.25); bottom: -30%; animation-duration: 9s; }
+      #loading .waves i:nth-child(2) { color: rgba(10,92,143,.55); bottom: -48%; animation-direction: reverse; }
+      #loading .waves i:nth-child(3) { color: #04131f; bottom: -66%; animation-duration: 12s; }
+      #loading .brand { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; transform: rotate(-3deg); }
+      #loading .drop { width: 84px; height: 98px; filter: drop-shadow(0 12px 18px rgba(0,0,0,.35)); animation: ld-bounce 1.2s cubic-bezier(.4,0,.5,1) infinite; transform-origin: 50% 100%; }
+      #loading .name {
+        font-family: 'Luckiest Guy', Impact, 'Arial Black', sans-serif; font-size: clamp(46px, 9vw, 84px); line-height: .9; letter-spacing: 1px; text-align: center;
+        color: #fff; text-shadow: 0 4px 0 #083a66, 0 7px 0 #05213d, 0 14px 30px rgba(0,0,0,.45);
+      }
+      #loading .name span { display: block; color: #ffd23f; text-shadow: 0 4px 0 #7a3a00, 0 7px 0 #4a2000, 0 14px 30px rgba(0,0,0,.45); }
+      #loading .bar {
+        position: relative; width: min(380px, 76vw); height: 22px; border-radius: 12px; overflow: hidden;
+        background: rgba(2, 12, 24, .6); box-shadow: inset 0 0 0 2px rgba(255,255,255,.22), 0 6px 18px rgba(0,0,0,.35);
+      }
+      #loading .fill {
+        position: absolute; inset: 3px auto 3px 3px; width: 0; border-radius: 9px;
+        background: linear-gradient(180deg, #8ef0ff, #35d0d6 50%, #1b9fd8);
+        box-shadow: inset 0 2px 0 rgba(255,255,255,.5);
+        transition: width .25s ease-out;
+      }
+      #loading .fill::after {
+        content: ''; position: absolute; inset: 0; border-radius: inherit;
+        background: repeating-linear-gradient(-45deg, rgba(255,255,255,.22) 0 8px, transparent 8px 16px);
+        animation: ld-stripes .8s linear infinite;
+      }
+      #loading .row { display: flex; justify-content: space-between; width: min(380px, 76vw); margin-top: -12px; font-weight: 800; font-size: 13px; letter-spacing: .5px; opacity: .9; }
+      #loading .pct { font-variant-numeric: tabular-nums; color: #ffd23f; }
+      #loading .tip {
+        position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 9vh); left: 50%; transform: translateX(-50%);
+        width: min(560px, 88vw); display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+        border-radius: 12px; background: rgba(2, 12, 24, .55); box-shadow: inset 0 0 0 2px rgba(255,255,255,.12);
+        font-weight: 700; font-size: 14px; line-height: 1.35; transition: opacity .3s;
+      }
+      #loading .tip b { flex: none; padding: 4px 8px 3px; border-radius: 6px; background: #ffd23f; color: #3b2300; font-size: 11px; letter-spacing: 1.5px; font-weight: 900; transform: skewX(-10deg); }
+      #loading .err { color: #ff9a9a; }
+      @keyframes ld-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+      @keyframes ld-wave { to { transform: translateX(120px); } }
+      @keyframes ld-stripes { to { background-position: 32px 0; } }
+      @keyframes ld-bounce {
+        0%, 100% { transform: translateY(0) scale(1, 1); }
+        40% { transform: translateY(-16px) scale(.94, 1.06); }
+        80% { transform: translateY(0) scale(1.08, .92); }
+      }
+      @media (prefers-reduced-motion: reduce) { #loading * { animation: none !important; } }
     </style>
   </head>
   <body>
-    <div id="loading">
+    <div id="loading" role="status" aria-live="polite">
+      <div class="rays"></div>
+      <div class="brand">
+        <svg class="drop" viewBox="0 0 120 140" aria-hidden="true">
+          <defs>
+            <radialGradient id="ld-g" cx="38%" cy="38%" r="75%"><stop offset="0" stop-color="#b4f6ff"/><stop offset=".45" stop-color="#35d0d6"/><stop offset="1" stop-color="#0b6e8a"/></radialGradient>
+          </defs>
+          <path d="M60 6C76 33 106 55 106 89a46 46 0 0 1-92 0C14 55 44 33 60 6z" fill="url(#ld-g)" stroke="#fff" stroke-opacity=".6" stroke-width="3"/>
+          <path d="M18 96c12-10 22-11 32-3s22 8 32-1 18-8 22-5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+          <ellipse cx="42" cy="66" rx="8" ry="15" fill="#fff" opacity=".65" transform="rotate(28 42 66)"/>
+          <path d="M38 20l8 7 14-15 14 15 8-7-4 18H42z" fill="#ffd23f" stroke="#7a3a00" stroke-width="3" stroke-linejoin="round" transform="translate(0 -14) rotate(-8 60 20)"/>
+        </svg>
+        <div class="name">RÍO<span>ROYALE</span></div>
+      </div>
       <div class="bar"><div class="fill"></div></div>
-      <div class="label">Cargando…</div>
+      <div class="row"><span class="label">…</span><span class="pct">0%</span></div>
+      <div class="tip"><b>TIP</b><span class="tiptext"></span></div>
+      <div class="waves"><i></i><i></i><i></i></div>
     </div>
     <div id="app"></div>
+    <noscript>Río Royale needs JavaScript and WebGL.</noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

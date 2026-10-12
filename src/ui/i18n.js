@@ -1,0 +1,437 @@
+/**
+ * Tiny i18n: t(key, vars) with {var} interpolation. `*word*` marks the yellow highlight in callouts.
+ * Language: settings 'lang' ('auto' → navigator.language), switchable at runtime (listeners re-render).
+ */
+const STRINGS = {
+  en: {
+    'app.tagline': 'Be the first to the sea',
+    'currency': 'DROPS',
+    'nav.play': 'PLAY',
+    'nav.locker': 'LOCKER',
+    'nav.shop': 'SHOP',
+    'nav.settings': 'SETTINGS',
+    'nav.daily': 'DAILY',
+    'nav.back': 'BACK',
+    'common.close': 'CLOSE',
+    'common.ad': 'AD',
+    'common.free': 'FREE',
+    'common.new': 'NEW',
+    'common.cancel': 'CANCEL',
+    'common.confirm': 'CONFIRM',
+
+    'lobby.mode': 'SOLO',
+    'lobby.modeSub': '16 STREAMS · ISLAND',
+    'lobby.play': 'PLAY',
+    'lobby.yourStream': 'YOUR STREAM',
+    'lobby.change': 'CHANGE',
+    'lobby.wins': 'WINS',
+    'lobby.matches': 'MATCHES',
+    'lobby.best': 'BEST',
+    'lobby.player': 'PLAYER',
+
+    'rarity.common': 'COMMON',
+    'rarity.rare': 'RARE',
+    'rarity.epic': 'EPIC',
+    'rarity.legendary': 'LEGENDARY',
+
+    'locker.title': 'LOCKER',
+    'locker.sub': 'Water skins',
+    'locker.equip': 'EQUIP',
+    'locker.equipped': 'EQUIPPED',
+    'locker.owned': 'OWNED',
+    'locker.buy': 'BUY',
+    'locker.need': 'NEED {n} MORE',
+    'locker.collection': '{a} / {b} COLLECTED',
+    'shop.title': 'ITEM SHOP',
+    'shop.sub': 'New items in {t}',
+    'shop.featured': 'FEATURED',
+    'shop.daily': 'DAILY',
+    'shop.free': 'FREE DROPS',
+    'shop.freeSub': 'Watch an ad · {n} left today',
+    'shop.freeNone': 'Come back tomorrow',
+    'shop.allOwned': 'You own every skin. Legend!',
+
+    'daily.title': 'DAILY REWARD',
+    'daily.sub': 'Log in every day to grow your streak',
+    'daily.day': 'DAY {n}',
+    'daily.claim': 'CLAIM',
+    'daily.double': 'CLAIM x2',
+    'daily.claimed': 'CLAIMED',
+    'daily.tomorrow': 'Come back tomorrow for day {n}',
+    'daily.streak': '{n}-DAY STREAK',
+
+    'settings.title': 'SETTINGS',
+    'settings.graphics': 'GRAPHICS',
+    'settings.quality': 'Quality',
+    'settings.reload': 'Changing quality reloads the game',
+    'q.auto': 'AUTO',
+    'q.low': 'LOW',
+    'q.medium': 'MED',
+    'q.high': 'HIGH',
+    'q.ultra': 'ULTRA',
+    'settings.audio': 'AUDIO',
+    'settings.master': 'Master',
+    'settings.music': 'Music',
+    'settings.sfx': 'Effects',
+    'settings.gameplay': 'GAMEPLAY',
+    'settings.nameTags': 'Rival name tags',
+    'settings.haptics': 'Vibration',
+    'settings.language': 'LANGUAGE',
+    'settings.player': 'PLAYER NAME',
+    'settings.controls': 'CONTROLS',
+    'settings.keyboard': 'KEYBOARD',
+    'settings.touch': 'TOUCH',
+    'settings.gamepad': 'GAMEPAD',
+    'ctl.steer': 'Steer',
+    'ctl.drop': 'Steer the drop',
+    'ctl.surge': 'Surge (costs water)',
+    'ctl.map': 'Map',
+    'ctl.pause': 'Pause',
+    'ctl.touchSteer': 'Hold left / right side',
+    'ctl.touchDrop': 'Hold & drag while falling',
+    'ctl.touchSurge': 'Surge button or swipe up',
+    'ctl.touchMap': 'Tap the minimap',
+    'ctl.padSteer': 'Left stick',
+    'ctl.padSurge': 'A / RT',
+
+    'hud.kmToSea': 'KM TO SEA',
+    'hud.alive': 'ALIVE',
+    'hud.place': 'PLACE',
+    'hud.altitude': 'ALTITUDE',
+    'hud.surge': 'SURGE',
+    'hud.map': 'MAP',
+    'hud.sea': 'SEA',
+    'hud.you': 'YOU',
+    'hint.dropKeys': '<k>W</k><k>A</k><k>S</k><k>D</k> steer the drop · fly through clouds for water',
+    'hint.dropTouch': 'Hold & drag to steer your drop',
+    'hint.streamKeys': '<k>A</k><k>D</k> steer · <k>SPACE</k> surge · <k>M</k> map',
+    'hint.streamTouch': 'Hold left or right to steer',
+
+    'co.goal': 'THE GOAL?',
+    'co.goal2': '*BE THE FIRST TO THE SEA*',
+    'co.swallow': 'SWALLOW LAKES\nTO GROW *STRONGER*',
+    'co.cutOff': '*CUT OFF!*\n{name}',
+    'co.swallowed': '*SWALLOWED!*\n{name}',
+    'co.wasCut': 'YOU GOT *CUT!*',
+    'co.left': 'ONLY *{n}* STREAMS LEFT',
+    'co.final': '*FINAL {n}!*',
+    'co.near': 'ALMOST THERE!\n*{km} KM* TO THE SEA',
+    'co.lake': 'LAKE SWALLOWED\n*+{v} L*',
+    'co.biggest': 'YOU ARE THE\n*BIGGEST STREAM*',
+    'co.revived': 'BACK IN\n*THE RACE!*',
+    'co.firstAtSea': '{name} REACHED\nTHE SEA *FIRST*',
+
+    'feed.cutOff': 'cut off',
+    'feed.swallowed': 'swallowed',
+    'feed.stole': 'cut',
+    'feed.dried': 'dried up',
+    'feed.finished': 'reached the sea',
+
+    'res.victory': 'FIRST TO THE SEA!',
+    'res.podium': 'PODIUM FINISH!',
+    'res.finished': 'YOU REACHED THE SEA',
+    'res.cutBy': 'CUT OFF BY',
+    'res.swallowedBy': 'SWALLOWED BY',
+    'res.dried': 'YOU DRIED UP',
+    'res.eliminated': 'ELIMINATED',
+    'res.of': 'OF {n}',
+    'res.revive': 'REVIVE',
+    'res.reviveSub': 'Jump back in with half your peak water',
+    'res.noThanks': 'NO THANKS',
+    'res.rewards': 'REWARDS',
+    'res.total': 'TOTAL',
+    'res.double': 'x2 REWARDS',
+    'res.doubled': 'DOUBLED!',
+    'res.playAgain': 'PLAY AGAIN',
+    'res.lobby': 'LOBBY',
+    'res.share': 'SHARE',
+    'res.copied': 'Link copied!',
+    'res.peak': 'PEAK FLOW',
+    'res.time': 'TIME',
+    'res.toSea': 'TO SEA',
+    'res.cuts': 'CUTS',
+    'res.continue': 'CONTINUE',
+    'share.text': 'I finished #{p} in Río Royale with {v} L of water. Can you beat me?',
+
+    'rw.participation': 'Participation',
+    'rw.placement': 'Placement {d}',
+    'rw.victory': 'Victory',
+    'rw.podium': 'Podium',
+    'rw.volume': 'Peak flow {d}',
+    'rw.cuts': 'Cuts ×{d}',
+    'rw.eliminations': 'Eliminations ×{d}',
+    'rw.firstWin': 'First win of the day',
+
+    'pause.title': 'PAUSED',
+    'pause.resume': 'RESUME',
+    'pause.settings': 'SETTINGS',
+    'pause.quit': 'LEAVE MATCH',
+    'pause.quitConfirm': 'Leave the match? It counts as a loss.',
+
+    'map.title': 'ISLAND MAP',
+    'map.streams': 'STREAMS',
+    'map.out': 'OUT',
+    'map.atSea': 'SEA #{p}',
+
+    'toast.unlocked': '{name} unlocked!',
+    'toast.equipped': '{name} equipped',
+    'toast.noCoins': 'Not enough drops',
+    'toast.adFail': 'No ad available right now',
+    'toast.coins': '+{n} drops',
+
+    'load.tip.0': 'Swallow lakes to grow — bigger streams cut smaller ones off.',
+    'load.tip.1': 'Fly through rain clouds while falling to land with more water.',
+    'load.tip.2': 'Surge burns water: save it for escapes and the final sprint.',
+    'load.tip.3': 'Valleys are fast, but rivals love them too. Plan your route!',
+    'load.tip.4': 'If a bigger stream crosses your path, you are cut off.',
+    'load.tip.5': 'Press M to open the map and read every rival route.',
+  },
+
+  es: {
+    'app.tagline': 'Sé el primero en llegar al mar',
+    'currency': 'GOTAS',
+    'nav.play': 'JUGAR',
+    'nav.locker': 'TAQUILLA',
+    'nav.shop': 'TIENDA',
+    'nav.settings': 'AJUSTES',
+    'nav.daily': 'DIARIO',
+    'nav.back': 'ATRÁS',
+    'common.close': 'CERRAR',
+    'common.ad': 'ANUNCIO',
+    'common.free': 'GRATIS',
+    'common.new': 'NUEVO',
+    'common.cancel': 'CANCELAR',
+    'common.confirm': 'CONFIRMAR',
+
+    'lobby.mode': 'EN SOLITARIO',
+    'lobby.modeSub': '16 RÍOS · ISLA',
+    'lobby.play': 'JUGAR',
+    'lobby.yourStream': 'TU RÍO',
+    'lobby.change': 'CAMBIAR',
+    'lobby.wins': 'VICTORIAS',
+    'lobby.matches': 'PARTIDAS',
+    'lobby.best': 'MEJOR',
+    'lobby.player': 'JUGADOR',
+
+    'rarity.common': 'COMÚN',
+    'rarity.rare': 'RARA',
+    'rarity.epic': 'ÉPICA',
+    'rarity.legendary': 'LEGENDARIA',
+
+    'locker.title': 'TAQUILLA',
+    'locker.sub': 'Aspectos de agua',
+    'locker.equip': 'EQUIPAR',
+    'locker.equipped': 'EQUIPADA',
+    'locker.owned': 'TUYA',
+    'locker.buy': 'COMPRAR',
+    'locker.need': 'TE FALTAN {n}',
+    'locker.collection': '{a} / {b} CONSEGUIDAS',
+    'shop.title': 'TIENDA',
+    'shop.sub': 'Novedades en {t}',
+    'shop.featured': 'DESTACADO',
+    'shop.daily': 'DIARIO',
+    'shop.free': 'GOTAS GRATIS',
+    'shop.freeSub': 'Mira un anuncio · quedan {n} hoy',
+    'shop.freeNone': 'Vuelve mañana',
+    'shop.allOwned': 'Tienes todas las skins. ¡Leyenda!',
+
+    'daily.title': 'RECOMPENSA DIARIA',
+    'daily.sub': 'Entra cada día para aumentar tu racha',
+    'daily.day': 'DÍA {n}',
+    'daily.claim': 'RECOGER',
+    'daily.double': 'RECOGER x2',
+    'daily.claimed': 'RECOGIDO',
+    'daily.tomorrow': 'Vuelve mañana para el día {n}',
+    'daily.streak': 'RACHA DE {n} DÍAS',
+
+    'settings.title': 'AJUSTES',
+    'settings.graphics': 'GRÁFICOS',
+    'settings.quality': 'Calidad',
+    'settings.reload': 'Cambiar la calidad recarga el juego',
+    'q.auto': 'AUTO',
+    'q.low': 'BAJA',
+    'q.medium': 'MEDIA',
+    'q.high': 'ALTA',
+    'q.ultra': 'ULTRA',
+    'settings.audio': 'SONIDO',
+    'settings.master': 'General',
+    'settings.music': 'Música',
+    'settings.sfx': 'Efectos',
+    'settings.gameplay': 'JUEGO',
+    'settings.nameTags': 'Nombres de los rivales',
+    'settings.haptics': 'Vibración',
+    'settings.language': 'IDIOMA',
+    'settings.player': 'NOMBRE DE JUGADOR',
+    'settings.controls': 'CONTROLES',
+    'settings.keyboard': 'TECLADO',
+    'settings.touch': 'TÁCTIL',
+    'settings.gamepad': 'MANDO',
+    'ctl.steer': 'Girar',
+    'ctl.drop': 'Dirigir la caída',
+    'ctl.surge': 'Acelerón (gasta agua)',
+    'ctl.map': 'Mapa',
+    'ctl.pause': 'Pausa',
+    'ctl.touchSteer': 'Mantén a izquierda / derecha',
+    'ctl.touchDrop': 'Mantén y arrastra al caer',
+    'ctl.touchSurge': 'Botón de acelerón o desliza arriba',
+    'ctl.touchMap': 'Toca el minimapa',
+    'ctl.padSteer': 'Stick izquierdo',
+    'ctl.padSurge': 'A / RT',
+
+    'hud.kmToSea': 'KM AL MAR',
+    'hud.alive': 'VIVOS',
+    'hud.place': 'PUESTO',
+    'hud.altitude': 'ALTITUD',
+    'hud.surge': 'ACELERÓN',
+    'hud.map': 'MAPA',
+    'hud.sea': 'MAR',
+    'hud.you': 'TÚ',
+    'hint.dropKeys': '<k>W</k><k>A</k><k>S</k><k>D</k> dirige la gota · cruza nubes para ganar agua',
+    'hint.dropTouch': 'Mantén y arrastra para dirigir la gota',
+    'hint.streamKeys': '<k>A</k><k>D</k> girar · <k>ESPACIO</k> acelerón · <k>M</k> mapa',
+    'hint.streamTouch': 'Mantén a izquierda o derecha para girar',
+
+    'co.goal': '¿EL OBJETIVO?',
+    'co.goal2': '*LLEGAR PRIMERO AL MAR*',
+    'co.swallow': 'TRÁGATE LOS LAGOS\nPARA HACERTE *MÁS FUERTE*',
+    'co.cutOff': '*¡CORTADO!*\n{name}',
+    'co.swallowed': '*¡ENGULLIDO!*\n{name}',
+    'co.wasCut': '*¡TE HAN CORTADO!*',
+    'co.left': 'SOLO QUEDAN *{n}* RÍOS',
+    'co.final': '*¡LOS {n} FINALES!*',
+    'co.near': '¡CASI!\n*{km} KM* AL MAR',
+    'co.lake': 'LAGO ENGULLIDO\n*+{v} L*',
+    'co.biggest': 'ERES EL\n*RÍO MÁS GRANDE*',
+    'co.revived': '¡DE VUELTA\n*A LA CARRERA!*',
+    'co.firstAtSea': '{name} LLEGÓ\n*PRIMERO* AL MAR',
+
+    'feed.cutOff': 'cortó a',
+    'feed.swallowed': 'se tragó a',
+    'feed.stole': 'cortó a',
+    'feed.dried': 'se secó',
+    'feed.finished': 'llegó al mar',
+
+    'res.victory': '¡PRIMERO EN EL MAR!',
+    'res.podium': '¡PODIO!',
+    'res.finished': 'HAS LLEGADO AL MAR',
+    'res.cutBy': 'CORTADO POR',
+    'res.swallowedBy': 'ENGULLIDO POR',
+    'res.dried': 'TE HAS SECADO',
+    'res.eliminated': 'ELIMINADO',
+    'res.of': 'DE {n}',
+    'res.revive': 'REVIVIR',
+    'res.reviveSub': 'Vuelve con la mitad de tu agua máxima',
+    'res.noThanks': 'NO, GRACIAS',
+    'res.rewards': 'RECOMPENSAS',
+    'res.total': 'TOTAL',
+    'res.double': 'x2 RECOMPENSAS',
+    'res.doubled': '¡DUPLICADO!',
+    'res.playAgain': 'OTRA PARTIDA',
+    'res.lobby': 'MENÚ',
+    'res.share': 'COMPARTIR',
+    'res.copied': '¡Enlace copiado!',
+    'res.peak': 'CAUDAL MÁX.',
+    'res.time': 'TIEMPO',
+    'res.toSea': 'AL MAR',
+    'res.cuts': 'CORTES',
+    'res.continue': 'CONTINUAR',
+    'share.text': 'He quedado #{p} en Río Royale con {v} L de agua. ¿Me superas?',
+
+    'rw.participation': 'Participación',
+    'rw.placement': 'Puesto {d}',
+    'rw.victory': 'Victoria',
+    'rw.podium': 'Podio',
+    'rw.volume': 'Caudal máximo {d}',
+    'rw.cuts': 'Cortes ×{d}',
+    'rw.eliminations': 'Eliminaciones ×{d}',
+    'rw.firstWin': 'Primera victoria del día',
+
+    'pause.title': 'PAUSA',
+    'pause.resume': 'CONTINUAR',
+    'pause.settings': 'AJUSTES',
+    'pause.quit': 'ABANDONAR',
+    'pause.quitConfirm': '¿Abandonar la partida? Contará como derrota.',
+
+    'map.title': 'MAPA DE LA ISLA',
+    'map.streams': 'RÍOS',
+    'map.out': 'FUERA',
+    'map.atSea': 'MAR #{p}',
+
+    'toast.unlocked': '¡{name} desbloqueada!',
+    'toast.equipped': '{name} equipada',
+    'toast.noCoins': 'No tienes suficientes gotas',
+    'toast.adFail': 'No hay anuncios disponibles ahora',
+    'toast.coins': '+{n} gotas',
+
+    'load.tip.0': 'Trágate lagos para crecer: los ríos grandes cortan a los pequeños.',
+    'load.tip.1': 'Cruza nubes de lluvia al caer para aterrizar con más agua.',
+    'load.tip.2': 'El acelerón gasta agua: guárdalo para escapar o el sprint final.',
+    'load.tip.3': 'Los valles son rápidos, pero los rivales también los adoran.',
+    'load.tip.4': 'Si un río más grande se cruza en tu camino, te corta el paso.',
+    'load.tip.5': 'Pulsa M para abrir el mapa y ver la ruta de cada rival.',
+  },
+};
+
+const LOAD_LABELS_EN = {
+  'Preparando el cielo': 'Painting the sky',
+  'Formando la isla': 'Raising the island',
+  'Trazando cauces': 'Carving riverbeds',
+  'Midiendo la distancia al mar': 'Measuring the way to the sea',
+  'Buscando lagos': 'Finding lakes',
+  'Llenando lagos y bosques': 'Growing forests and lakes',
+  'Despertando a los rivales': 'Waking up the rivals',
+  'Puliendo la luz': 'Polishing the light',
+  'Listo': 'Ready',
+};
+
+export const LANGS = ['es', 'en'];
+let lang = detect();
+const listeners = new Set();
+
+function detect() {
+  const nav = (typeof navigator !== 'undefined' && (navigator.languages?.[0] || navigator.language)) || 'en';
+  return nav.toLowerCase().startsWith('es') ? 'es' : 'en';
+}
+
+export function resolveLang(setting) {
+  return setting === 'es' || setting === 'en' ? setting : detect();
+}
+
+export function setLang(l) {
+  const next = resolveLang(l);
+  if (next === lang) return;
+  lang = next;
+  if (typeof document !== 'undefined') document.documentElement.lang = lang;
+  for (const fn of listeners) fn(lang);
+}
+
+export const getLang = () => lang;
+
+export function onLangChange(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+export function t(key, vars) {
+  let s = STRINGS[lang]?.[key] ?? STRINGS.en[key] ?? key;
+  if (vars) s = s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? `{${k}}`));
+  return s;
+}
+
+/** Engine progress labels are Spanish; translate the known ones. */
+export function loadLabel(label) {
+  return lang === 'en' ? LOAD_LABELS_EN[label] ?? label : label;
+}
+
+/** Update every [data-i18n] node under root (static markup). */
+export function applyI18n(root) {
+  root.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  root.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+  root.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+    el.setAttribute('aria-label', t(el.dataset.i18nAria));
+  });
+}
