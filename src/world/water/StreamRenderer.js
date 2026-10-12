@@ -512,16 +512,17 @@ export class StreamRenderer {
     const bu = view.blobMat.uniforms;
 
     // landing transition: the blob squashes into the ground for a moment
-    if (view.prevPhase === 'drop' && s.phase !== 'drop') {
+    if ((view.prevPhase === 'drop' && s.phase !== 'drop') || (view.prevLeap && !s.leaping)) {
       view.landT = time;
       view.landPos.copy(s.pos);
     }
     view.prevPhase = s.phase;
+    view.prevLeap = !!s.leaping;
 
     // ---- drop blob
-    const blobR = s.radius * 1.7;
+    const blobR = s.radius * (s.leaping ? 1.25 : 1.7);
     const landAge = view.landT >= 0 ? time - view.landT : 1e9;
-    if (s.phase === 'drop') {
+    if (s.phase === 'drop' || s.leaping) {
       view.blob.visible = true;
       bu.uCenter.value.copy(s.pos);
       bu.uR.value = blobR;
@@ -530,7 +531,7 @@ export class StreamRenderer {
       bu.uStretch.value = Math.min(sp / 90, 1) * 0.28;
       bu.uSquash.value = 0;
       bu.uAlpha.value = 1;
-      this.emitDrop(view, dt);
+      if (!s.leaping) this.emitDrop(view, dt); // the drop trail mist would fog the chase cam
     } else if (landAge < 0.3) {
       view.blob.visible = true;
       const k = landAge / 0.3;
@@ -544,7 +545,7 @@ export class StreamRenderer {
 
     // ---- head wave
     const flowing = s.phase === 'flow';
-    view.head.visible = flowing && n > 0;
+    view.head.visible = flowing && n > 0 && !s.leaping;
     if (flowing && n > 0) {
       const d = s.trail.data;
       const li = (n - 1) * 4;

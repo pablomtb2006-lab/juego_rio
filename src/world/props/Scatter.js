@@ -142,7 +142,7 @@ export function scatterProps(terrain, { density = 1, seed = 7, treeNames, rockNa
 
   const STEP = 20;
   const half = terrain.size / 2;
-  const maxTrees = 3.4 * density; // per 400 m² at full forest
+  const maxTrees = 4.4 * density; // per 400 m² at full forest (dense: you race between trunks)
   const has = (n) => trees[n] !== undefined;
   const pines = treeNames.filter((n) => n.startsWith('pine'));
   const broads = treeNames.filter((n) => n.startsWith('broad'));
@@ -187,12 +187,12 @@ export function scatterProps(terrain, { density = 1, seed = 7, treeNames, rockNa
       const coastOK = sstep(3, 10, hc);
       // vegetation fields only where something can grow (skips mountains / cliffs / beaches)
       const veg = hRel < 0.62 && ny > 0.66 && hc > 2.5;
-      const forest = veg ? sstep(0.06, 0.3, fbm(nForest, xc / 1100, zc / 1100, 3) + valley * 0.36 + low * 0.12) : 0;
+      const forest = veg ? sstep(0.06, 0.3, fbm(nForest, xc / 1100, zc / 1100, 3) + 0.14 + valley * 0.62 + low * 0.12) : 0;
       const clear = veg ? sstep(0.38, 0.62, nClear(xc / 260, zc / 260)) : 0;
       const autumn = veg ? sstep(0.1, 0.42, fbm(nAutumn, xc / 650, zc / 650, 2)) : 0;
 
       // --- trees -------------------------------------------------------------
-      const dTree = (maxTrees * forest * (1 - 0.88 * clear) + 0.05 * density) * alt * slopeOK * coastOK * (1 - 0.9 * chan);
+      const dTree = (maxTrees * forest * (1 - 0.7 * clear) + 0.05 * density) * alt * slopeOK * coastOK * (1 - 0.5 * chan);
       let nT = Math.floor(dTree + rand());
       for (let t = 0; t < nT; t++) {
         const x = x0 + rand() * STEP;
@@ -209,7 +209,8 @@ export function scatterProps(terrain, { density = 1, seed = 7, treeNames, rockNa
         const wBirch = 0.07 + 0.6 * w.near;
         let r = rand() * (wPine + wBroad + wAut + wBirch);
         const treeShrink = 0.7 + 0.3 * (1 - sstep(0.36, 0.56, hr));
-        const sc = (0.78 + rand() * 0.5) * treeShrink;
+        // tall forests, tallest along the valleys the rivers run down
+        const sc = (1.05 + rand() * 0.65) * treeShrink * (1 + 0.35 * valley);
         if ((r -= wPine) < 0 && pines.length) placeTree(pick(pines), x, z, y - 0.3, sc, pick(PALETTE.pine), 0.04);
         else if ((r -= wBroad) < 0 && broads.length) placeTree(pick(broads), x, z, y - 0.3, sc * 1.05, pick(PALETTE.broad));
         else if ((r -= wAut) < 0 && broads.length) placeTree(pick(broads), x, z, y - 0.3, sc * 1.0, pick(PALETTE.autumn));

@@ -34,6 +34,10 @@ export class Hud {
       </div>
       <div class="hint" data-ref="hint"></div>
       <div class="steer-zones" data-ref="steer"><span>${icon('back')}</span><span>${icon('chevronRight')}</span></div>
+      <button class="leap" type="button" data-ref="leap" data-sfx="none">
+        <i class="leap__cd" data-ref="leapCd"></i>
+        <b>🐬</b><span data-ref="leapLbl"></span><kbd>E</kbd>
+      </button>
       <button class="surge" type="button" data-ref="surge">
         <svg class="surge__ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46"/></svg>
         ${icon('bolt')}<span data-i18n="hud.surge"></span>
@@ -43,6 +47,11 @@ export class Hud {
     this.r.pause.addEventListener('click', () => ui.pause(true));
     shield(this.r.pause);
     this.setupSurge();
+    shield(this.r.leap);
+    this.r.leap.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      ui.ctx.game?.input?.requestJump();
+    });
 
     this.dispVol = 0;
     this.lastVol = 0;
@@ -193,6 +202,17 @@ export class Hud {
     if (surgeOn) {
       r.surge.classList.toggle('is-active', !!p.surging);
       r.surge.classList.toggle('is-disabled', vol <= SURGE_MIN);
+    }
+    // leap: visible while flowing, ring fills while recharging
+    const leapOn = p.phase === 'flow' && game.state === 'stream';
+    r.leap.classList.toggle('is-on', leapOn);
+    if (leapOn) {
+      const cd = p.leapCooldown ? Math.min(1, (p.leapCool || 0) / p.leapCooldown) : 0;
+      r.leapCd.style.setProperty('--cd', `${Math.round(cd * 360)}deg`);
+      r.leap.classList.toggle('is-ready', cd <= 0 && !p.leaping);
+      r.leap.classList.toggle('is-touch', !!touch);
+      const lbl = ui.lang === 'en' ? 'LEAP' : 'SALTO';
+      if (r.leapLbl.textContent !== lbl) r.leapLbl.textContent = lbl;
     }
     this.steerAge += dt;
     r.steer.classList.toggle('is-on', touch && this.steerAge < 4.5 && p.phase === 'flow');

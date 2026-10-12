@@ -35,6 +35,13 @@ export const PHYS = {
   latAccelMax: 80, // m/s² of lateral grip at speed
   gravTurn: 0.6,
   trailSpacing: 4,
+  // leap (E / J / jump button): hop a ridge, a dam or a rival's river
+  leapVy: 46, // m/s launch (× stream.leapPower)
+  leapGravity: 24,
+  leapSpeed: 38, // minimum forward speed while airborne
+  leapCost: 0.06, // fraction of volume
+  leapMinVolume: 40000,
+  leapAirTurn: 1.1, // rad/s of air control
   // drop (skydive): [flare, neutral, dive]
   dropFall: [46, 86, 150],
   dropHoriz: [36, 26, 52],
@@ -144,7 +151,46 @@ export class StreamPhysics {
 
   // --- FLOW -----------------------------------------------------------------
 
+  startLeap(s) {
+    const { bus } = this.game.ctx;
+    s.leaping = true;
+    s.leapVy = PHYS.leapVy * (s.leapPower || 1);
+    s.flowSpeed = Math.max(s.flowSpeed, PHYS.leapSpeed);
+    s.addVolume(-s.volume * PHYS.leapCost);
+    s.leapCool = s.leapCooldown;
+    bus.emit('leap', { stream: s });
+    bus.emit('splash', { x: s.pos.x, y: s.pos.y, z: s.pos.z, size: s.radius * 2.2, stream: s, kind: 'leap' });
+  }
+
+  updateLeap(dt, s) {
+    const { terrain, bus } = this.game.ctx;
+    rotate(s.heading, THREE.MathUtils.clamp(s.input.steer || 0, -1, 1) * PHYS.leapAirTurn * dt);
+    const sp = Math.max(s.flowSpeed, PHYS.leapSpeed);
+    s.leapVy -= PHYS.leapGravity * dt;
+    const lim = terrain.size * 0.497;
+    s.pos.x = THREE.MathUtils.clamp(s.pos.x + s.heading.x * sp * dt, -lim, lim);
+    s.pos.z = THREE.MathUtils.clamp(s.pos.z + s.heading.y * sp * dt, -lim, lim);
+    s.pos.y += s.leapVy * dt;
+    s.vel.set(s.heading.x * sp, s.leapVy, s.heading.y * sp);
+    const ground = this.surfaceY(s.pos.x, s.pos.z, s.radius);
+    if (s.pos.y <= ground && s.leapVy < 0) {
+      const impact = -s.leapVy;
+      s.leaping = false;
+      s.pos.y = ground;
+      s.flowSpeed = sp * 0.85;
+      s.trail.push(s.pos.x, s.pos.y, s.pos.z, s.radius);
+      bus.emit('leapLanded', { stream: s, impact });
+      bus.emit('splash', { x: s.pos.x, y: s.pos.y, z: s.pos.z, size: s.radius * (2.5 + impact / 40), stream: s, kind: 'landing' });
+    }
+  }
+
   updateFlow(dt, s) {
+    s.leapCool = Math.max(0, s.leapCool - dt);
+    if (s.leaping) return this.updateLeap(dt, s);
+    if (s.input.jump && s.leapCool <= 0 && s.volume > PHYS.leapMinVolume) {
+      this.startLeap(s);
+      return this.updateLeap(dt, s);
+    }
     const { terrain } = this.game.ctx;
     const hydro = this.game.hydro;
     const x = s.pos.x;

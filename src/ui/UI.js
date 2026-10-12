@@ -17,6 +17,7 @@ import { Minimap, FullMap } from './hud/Minimap.js';
 import { Hud } from './hud/Hud.js';
 import { Lobby } from './screens/Lobby.js';
 import { Skins } from './screens/Skins.js';
+import { Upgrades } from './screens/Upgrades.js';
 import { SettingsScreen } from './screens/Settings.js';
 import { Daily } from './screens/Daily.js';
 import { Result } from './screens/Result.js';
@@ -24,7 +25,7 @@ import { Pause } from './screens/Pause.js';
 import { UiSynth } from './UiSynth.js';
 import { rank } from './hud/Minimap.js';
 
-const MENU_SCREENS = ['lobby', 'locker', 'shop', 'settings'];
+const MENU_SCREENS = ['lobby', 'locker', 'shop', 'upgrades', 'settings'];
 const NAME_SEEDS = ['splash', 'gota', 'brook', 'arroyo', 'drizzle', 'cascada', 'ripple', 'torrente'];
 
 /**
@@ -72,6 +73,7 @@ export class UI {
     this.lobby = new Lobby(this);
     this.locker = new Skins(this, 'locker');
     this.shop = new Skins(this, 'shop');
+    this.upgradesScreen = new Upgrades(this);
     this.settingsScreen = new SettingsScreen(this);
     this.daily = new Daily(this);
     this.result = new Result(this);
@@ -82,9 +84,9 @@ export class UI {
     this.r.hudLayer.appendChild(this.hud.el);
     this.hud.r.side.prepend(this.minimap.el);
     this.r.calloutLayer.appendChild(this.callouts.el);
-    this.r.screens.append(this.lobby.el, this.locker.el, this.shop.el, this.settingsScreen.el, this.result.el);
+    this.r.screens.append(this.lobby.el, this.locker.el, this.shop.el, this.upgradesScreen.el, this.settingsScreen.el, this.result.el);
     this.r.top.append(this.fullmap.el, this.pauseScreen.el, this.daily.el);
-    this.screens = { lobby: this.lobby, locker: this.locker, shop: this.shop, settings: this.settingsScreen };
+    this.screens = { lobby: this.lobby, locker: this.locker, shop: this.shop, upgrades: this.upgradesScreen, settings: this.settingsScreen };
 
     applyI18n(root);
     this.bindBus();

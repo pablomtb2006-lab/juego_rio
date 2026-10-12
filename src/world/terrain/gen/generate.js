@@ -226,6 +226,32 @@ export function generateTerrain(opts, progress = () => {}) {
   }
   lap('alpine');
 
+  // terraces: stylised cliff bands across the mid-slopes. Rivers crossing them fall as
+  // waterfalls; the flat treads between them are where lakes and forests settle.
+  {
+    const I = 135; // tread + riser height (m)
+    for (let j = 0; j < res; j++) {
+      const z = (j / (res - 1) - 0.5) * size;
+      for (let i = 0; i < res; i++) {
+        const k = j * res + i;
+        const hk = heights[k];
+        if (hk < 110 || hk > 1650) continue;
+        const x = (i / (res - 1) - 0.5) * size;
+        const band = sstep(110, 240, hk) * sstep(1650, 1350, hk);
+        // terraces come in regions (mesas, canyon steps), not as rings over the whole island
+        const region = sstep(0.08, 0.38, fbm(nBiome, x / 2600 + 31, z / 2600 - 12, 2));
+        const w = band * region * 0.85;
+        if (w <= 0.001) continue;
+        const off = fbm(nAlp, x / 1500 + 40, z / 1500 - 9, 2) * I * 0.6;
+        const v = (hk + off) / I;
+        const fl = Math.floor(v);
+        const terr = (fl + sstep(0.84, 1.0, v - fl)) * I - off;
+        heights[k] = hk + (terr - hk) * w;
+      }
+    }
+  }
+  lap('terraces');
+
   // ---------------------------------------------------------------------------------
   // 4) Coast: beaches in bays, cliffs on headlands, shelf, islets
   // ---------------------------------------------------------------------------------

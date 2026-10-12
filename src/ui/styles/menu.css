@@ -1412,3 +1412,74 @@
     height: 62px;
   }
 }
+
+/* --- upgrades (progression) ------------------------------------------------------- */
+.upg {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  width: min(720px, calc(100% - 32px));
+  margin: 96px auto 24px;
+  max-height: calc(100% - 120px);
+  overflow-y: auto;
+  pointer-events: auto;
+}
+.upg__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(20, 60, 110, 0.92), rgba(8, 28, 56, 0.92));
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14), 0 8px 22px rgba(0, 0, 0, 0.3);
+  transform: skewX(-4deg);
+}
+.upg__card > * { transform: skewX(4deg); }
+.upg__icon {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 35% 30%, #5fe7ff, #0b6e8a);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25);
+}
+.upg__body { flex: 1; min-width: 0; }
+.upg__body h3 {
+  margin: 0;
+  font-family: 'Luckiest Guy', Impact, sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  color: #fff;
+}
+.upg__body h3 small { font-family: Inter, sans-serif; font-weight: 800; font-size: 12px; color: #ffd23f; margin-left: 6px; }
+.upg__body p { margin: 2px 0 8px; font-weight: 700; font-size: 13px; opacity: 0.85; }
+.upg__pips { display: flex; gap: 5px; }
+.upg__pips i { width: 26px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.15); }
+.upg__pips i.on { background: linear-gradient(90deg, #ffd23f, #ffb800); box-shadow: 0 0 8px rgba(255, 210, 63, 0.6); }
+.upg__buy {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Luckiest Guy', Impact, sans-serif;
+  font-size: 20px;
+  color: #3a2500;
+  background: linear-gradient(#ffe34d, #ffb800);
+  box-shadow: 0 5px 0 #b37400;
+  cursor: pointer;
+}
+.upg__buy .coin { width: 20px; height: 20px; }
+.upg__buy.is-poor { filter: grayscale(0.8) brightness(0.8); }
+.upg__buy:active { transform: translateY(3px); box-shadow: 0 2px 0 #b37400; }
+.upg__max { font-family: 'Luckiest Guy', Impact, sans-serif; font-size: 20px; color: #ffd23f; padding: 0 10px; }
+@media (max-width: 560px) {
+  .upg { margin-top: 84px; }
+  .upg__icon { width: 46px; height: 46px; font-size: 24px; }
+  .upg__body h3 { font-size: 18px; }
+}

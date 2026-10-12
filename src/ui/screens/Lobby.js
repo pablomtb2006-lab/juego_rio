@@ -51,6 +51,7 @@ export class Lobby {
           <button class="tab is-active" type="button" data-go="lobby"><span data-i18n="nav.play"></span></button>
           <button class="tab" type="button" data-go="locker"><span data-i18n="nav.locker"></span></button>
           <button class="tab" type="button" data-go="shop"><span data-i18n="nav.shop"></span><i class="badge" data-ref="shopBadge"></i></button>
+          <button class="tab" type="button" data-go="upgrades"><span data-i18n="nav.upgrades"></span></button>
         </nav>
         <div class="topbar__right" data-ref="right">
           <button class="iconbtn iconbtn--gift" type="button" data-ref="gift" data-i18n-aria="nav.daily">${icon('gift')}<i class="dot"></i></button>
@@ -98,6 +99,7 @@ export class Lobby {
       <nav class="bottomnav">
         <button type="button" data-go="locker">${icon('locker')}<span data-i18n="nav.locker"></span></button>
         <button type="button" data-go="shop">${icon('shop')}<span data-i18n="nav.shop"></span><i class="badge" data-ref="shopBadge2"></i></button>
+        <button type="button" data-go="upgrades">${icon('shop')}<span data-i18n="nav.upgrades"></span></button>
         <button type="button" data-ref="gift2">${icon('gift')}<span data-i18n="nav.daily"></span><i class="dot"></i></button>
       </nav>
     </section>`);

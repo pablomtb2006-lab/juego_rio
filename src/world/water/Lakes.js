@@ -113,7 +113,7 @@ void main() {
 
   // ---- foam: contact line + whirlpool spiral arms
   float fn = vnoise(xz * 0.35 + vec2(t * 0.2, -t * 0.15));
-  float contact = 1.0 - aastep(0.35 + fn * 0.45 + fp * 0.8, depth);
+  float contact = 1.0 - aastep(0.35 + fn * 0.45 + min(fp * 0.3, 1.2), depth);
   float spiral = sin(ang * 3.0 + log(vr + 1.0) * 6.0 - t * (4.0 + 8.0 * uDrain));
   float arms = aastep(0.55, spiral * 0.5 + 0.5 + (fn - 0.5) * 0.5) * uDrain * (1.0 - smoothstep(uRadius * 0.15, uRadius * 0.9, vr));
   float foam = max(contact, arms * 0.9);

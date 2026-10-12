@@ -9,6 +9,7 @@ const STRINGS = {
     'nav.play': 'PLAY',
     'nav.locker': 'LOCKER',
     'nav.shop': 'SHOP',
+    'nav.upgrades': 'UPGRADES',
     'nav.settings': 'SETTINGS',
     'nav.daily': 'DAILY',
     'nav.back': 'BACK',
@@ -20,7 +21,7 @@ const STRINGS = {
     'common.confirm': 'CONFIRM',
 
     'lobby.mode': 'SOLO',
-    'lobby.modeSub': '16 STREAMS · ISLAND',
+    'lobby.modeSub': '24 STREAMS · ISLAND',
     'lobby.play': 'PLAY',
     'lobby.yourStream': 'YOUR STREAM',
     'lobby.change': 'CHANGE',
@@ -104,7 +105,7 @@ const STRINGS = {
     'hud.you': 'YOU',
     'hint.dropKeys': '<k>W</k><k>A</k><k>S</k><k>D</k> steer the drop · fly through clouds for water',
     'hint.dropTouch': 'Hold & drag to steer your drop',
-    'hint.streamKeys': '<k>A</k><k>D</k> steer · <k>SPACE</k> surge · <k>M</k> map',
+    'hint.streamKeys': '<k>A</k><k>D</k> steer · <k>SPACE</k> surge · <k>E</k> leap · <k>M</k> map',
     'hint.streamTouch': 'Hold left or right to steer',
 
     'co.goal': 'THE GOAL?',
@@ -193,6 +194,7 @@ const STRINGS = {
     'nav.play': 'JUGAR',
     'nav.locker': 'TAQUILLA',
     'nav.shop': 'TIENDA',
+    'nav.upgrades': 'MEJORAS',
     'nav.settings': 'AJUSTES',
     'nav.daily': 'DIARIO',
     'nav.back': 'ATRÁS',
@@ -204,7 +206,7 @@ const STRINGS = {
     'common.confirm': 'CONFIRMAR',
 
     'lobby.mode': 'EN SOLITARIO',
-    'lobby.modeSub': '16 RÍOS · ISLA',
+    'lobby.modeSub': '24 RÍOS · ISLA',
     'lobby.play': 'JUGAR',
     'lobby.yourStream': 'TU RÍO',
     'lobby.change': 'CAMBIAR',
@@ -288,7 +290,7 @@ const STRINGS = {
     'hud.you': 'TÚ',
     'hint.dropKeys': '<k>W</k><k>A</k><k>S</k><k>D</k> dirige la gota · cruza nubes para ganar agua',
     'hint.dropTouch': 'Mantén y arrastra para dirigir la gota',
-    'hint.streamKeys': '<k>A</k><k>D</k> girar · <k>ESPACIO</k> acelerón · <k>M</k> mapa',
+    'hint.streamKeys': '<k>A</k><k>D</k> girar · <k>ESPACIO</k> acelerón · <k>E</k> salto · <k>M</k> mapa',
     'hint.streamTouch': 'Mantén a izquierda o derecha para girar',
 
     'co.goal': '¿EL OBJETIVO?',

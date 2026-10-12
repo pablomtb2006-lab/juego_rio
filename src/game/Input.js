@@ -3,7 +3,7 @@ import * as THREE from 'three';
 /**
  * Unified input → { steer: -1..1, forward: -1..1, move: Vector2 (x = steer, y = forward), surge }.
  *
- *  Keyboard  A/D or ←/→ steer · W/↑ dive (drop) / surge (river) · S/↓ flare · Space/Shift surge
+ *  Keyboard  A/D or ←/→ steer · W/↑ dive (drop) / surge (river) · S/↓ flare · Space/Shift surge · E/J leap
  *  Touch     one-thumb floating stick anywhere on screen: drag sideways to steer, drag up to
  *            dive / surge, down to flare. The anchor follows the thumb once you pass the edge,
  *            so reversing is instant. Double-tap-and-hold or a second finger also surges.
@@ -114,12 +114,22 @@ export class Input {
       if (Math.abs(ax) > 0.15) x = shape((ax - Math.sign(ax) * 0.15) / 0.85);
       if (Math.abs(ay) > 0.15) y = -shape((ay - Math.sign(ay) * 0.15) / 0.85);
       surge = surge || pad.buttons[0]?.pressed || (pad.buttons[7]?.value ?? 0) > 0.3;
+      if (pad.buttons[1]?.pressed || pad.buttons[3]?.pressed) this.jumpQueued = true;
     }
+    if (k.has('KeyE') || k.has('KeyJ')) this.jumpQueued = true;
 
     this.steer = x;
     this.forward = y;
     this.move.set(x, y);
     this.surge = !!surge;
+    // jump is an edge-triggered action: consumed by the player controller
+    this.jump = !!this.jumpQueued;
+    this.jumpQueued = false;
+  }
+
+  /** UI jump button / tests. */
+  requestJump() {
+    this.jumpQueued = true;
   }
 }
 

@@ -121,7 +121,14 @@ export class Stream {
     this.kills = 0;
     this.cuts = 0;
     this.absorbedTotal = 0;
-    this.input = { steer: 0, move: new THREE.Vector2(), surge: false };
+    this.input = { steer: 0, move: new THREE.Vector2(), surge: false, jump: false };
+    // leap: the river throws itself into the air to hop a ridge or a dam (see StreamPhysics.leap)
+    this.leaping = false;
+    this.leapVy = 0;
+    this.leapCool = 0;
+    this.leapCooldown = 7; // s, reduced by upgrades
+    this.leapPower = 1; // upgrades
+    this.upgrades = null;
   }
 
   get alive() {

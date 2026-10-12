@@ -108,7 +108,13 @@ export class AIController {
       if (far > glideReach) score -= (far - glideReach) / 300;
       for (const c of claims) {
         const dc = Math.hypot(c.x - x, c.z - z);
-        if (dc < 500) score -= (500 - dc) / 250;
+        if (dc < 220) score -= (220 - dc) / 220;
+      }
+      // rivals like to land where the action is: near the player's drop line
+      const pl = game.player;
+      if (pl && pl !== s) {
+        const dp = Math.hypot(x - pl.pos.x, z - pl.pos.z);
+        score += Math.max(0, 1 - dp / 1400) * 1.3;
       }
       score += this.rand() * 0.6;
       if (score > bestScore) {
@@ -218,6 +224,18 @@ export class AIController {
     s.input.steer = THREE.MathUtils.clamp(this.steer, -1, 1);
     s.input.move.set(s.input.steer, 0);
     s.input.surge = this.decideSurge(dt, game);
+
+    // leap: over a dam that blocks us, out of a dead end, or a bully pouncing on its prey
+    let jump = !!s.wantLeap;
+    s.wantLeap = false;
+    if (!jump && s.leapCool <= 0) {
+      if (this.stuckT > 5 && s.flowSpeed < 4) jump = true;
+      else if (this.goal === 'hunt' && this.prey?.phase === 'flow') {
+        const d = s.pos.distanceTo(this.prey.pos);
+        if (d > 60 && d < 170 && this.prey.volume < s.volume * 0.8 && this.rand() < dt * 0.25) jump = true;
+      }
+    }
+    s.input.jump = jump;
 
     if (this.rubberBand) this.applyRubberBand(dt, game);
   }

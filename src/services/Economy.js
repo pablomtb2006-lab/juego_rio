@@ -1,4 +1,5 @@
 import { SKINS, getSkin } from '../game/skins.js';
+import { UPGRADES, nextCost } from '../game/upgrades.js';
 import { CONFIG } from './config.js';
 
 const E = CONFIG.economy;
@@ -51,6 +52,7 @@ export class Economy {
     };
     this.daily = { last: null, streak: 0, ...(storage.get('daily', {}) ?? {}) };
     this.flags = { firstWinDay: null, freeDay: null, freeCount: 0, seen: [], ...(storage.get('flags', {}) ?? {}) };
+    this.upgrades = { ...(storage.get('upgrades', {}) ?? {}) };
   }
 
   onChange(fn) {
@@ -75,6 +77,7 @@ export class Economy {
     this.storage.set('stats', this.stats);
     this.storage.set('daily', this.daily);
     this.storage.set('flags', this.flags);
+    this.storage.set('upgrades', this.upgrades);
   }
 
   get catalog() {
@@ -149,6 +152,26 @@ export class Economy {
     const level = 1 + Math.floor(Math.sqrt(xp / 120));
     const at = (l) => 120 * (l - 1) * (l - 1);
     return { level, xp, progress: (xp - at(level)) / (at(level + 1) - at(level)) };
+  }
+
+  // --- upgrades (progression) --------------------------------------------------------
+
+  upgradeLevel(id) {
+    return this.upgrades[id] | 0;
+  }
+
+  /** Buy the next level of an upgrade. Returns true on success. */
+  buyUpgrade(id) {
+    if (!UPGRADES.some((u) => u.id === id)) return false;
+    const level = this.upgradeLevel(id);
+    const cost = nextCost(id, level);
+    if (cost == null || this.coins < cost) return false;
+    this.coins -= cost;
+    this.upgrades[id] = level + 1;
+    this.save();
+    this.analytics?.track('upgrade', { id, level: level + 1, price: cost, balance: this.coins });
+    this.emit('upgrade');
+    return true;
   }
 
   // --- skins ----------------------------------------------------------------------

@@ -42,7 +42,7 @@ export class TerrainData {
   constructor(ctx) {
     this.ctx = ctx;
     this.seed = ctx.params.seed;
-    this.size = 24000;
+    this.size = 18000; // smaller island: more encounters, 2.5–4 min races
     this.res = 1025;
     this.cell = this.size / (this.res - 1);
     this.seaLevel = 0;

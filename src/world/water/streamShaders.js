@@ -136,9 +136,9 @@ void main() {
   T = normalize(T - N0 * dot(T, N0) + 1e-5);
   vec3 B = cross(N0, T);
 
-  float rapids = smoothstep(0.12, 0.5, steep);
+  float rapids = smoothstep(0.3, 0.85, steep) * 0.8;
   float nearHead = 1.0 - smoothstep(0.0, 4.0 * w, uHeadS - s);
-  float agit = clamp(max(nearHead * 0.85, rapids) + uSurge * 0.3, 0.0, 1.0);
+  float agit = clamp(max(nearHead * 0.45, rapids) + uSurge * 0.1, 0.0, 0.75);
 
   // flowing ripples, stretched along the flow
   vec3 r1 = gnoised(vec2(lat * 0.28, u * 0.09));
@@ -172,7 +172,7 @@ void main() {
   float fnA = vnoise(vec2(lat * 0.5, u * 0.045));
   float fnB = vnoise(vec2(lat * 1.3 + 3.0, u * 0.13));
   float streaks = fnA * 0.62 + fnB * 0.38;
-  float streakFoam = aastep(mix(0.8, 0.56, agit), streaks);
+  float streakFoam = aastep(mix(0.82, 0.64, agit), streaks);
   float lam = 2.4 + w * 0.3;
   float arcPh = (u + 0.6 * w * tl * tl) / lam + fnA * 0.7;
   float arcs = aastep(mix(0.95, 0.8, agit), fract(arcPh)) * aastep(0.5 - agit * 0.2, fnB);

@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { Stream } from './Stream.js';
+import { Obstacles } from './Obstacles.js';
+import { applyUpgrades } from './upgrades.js';
+import { getLang } from '../ui/i18n.js';
 import { StreamPhysics } from './StreamPhysics.js';
 import { Rules, RULES } from './Rules.js';
 import { AIController } from './AIController.js';
@@ -13,7 +16,7 @@ import { RIVAL_COLORS } from './skins.js';
 import { mulberry32 } from '../core/random.js';
 import { runScenario } from './Scenarios.js';
 
-export const RIVAL_COUNT = 15;
+export const RIVAL_COUNT = 23; // 24 streams: crowded valleys, more fights
 export const DROP_ALTITUDE = 3300;
 export const START_VOLUME = 150000;
 
@@ -56,6 +59,16 @@ export class Game {
       this.cameraDirector.onLanded(stream, impact);
       this.slowMo(0.4, 0.35);
     });
+    bus.on('damBreak', ({ stream, bonus }) => {
+      if (stream !== this.player) return;
+      const es = getLang() === 'es';
+      this.ctx.ui?.callout?.(es ? '¡PRESA ROTA!' : 'DAM SMASHED!', `+${fmtL(bonus)}`);
+      this.cameraDirector.shake?.(5);
+      this.ctx.postfx?.flash?.(0.25);
+    });
+    bus.on('leap', ({ stream }) => {
+      if (stream === this.player) this.ctx.audio?.play?.('whoosh');
+    });
     bus.on('cut', ({ attacker, victim }) => {
       if (attacker === this.player) {
         this.cameraDirector.onCut(true);
@@ -89,6 +102,8 @@ export class Game {
     const { terrain } = this.ctx;
     this.hydro = new Hydrology(terrain);
     this.dropZone = computeDropZone(terrain, this.hydro);
+    this.obstacles = new Obstacles(this);
+    this.obstacles.build();
   }
 
   get aliveCount() {
@@ -127,6 +142,8 @@ export class Game {
     const { world, terrain, services } = this.ctx;
     world.reset();
     this.rules.reset();
+    this.obstacles.reset();
+    this.damWarned = new Set();
     this.time = 0;
     this.finishCount = 0;
     this.pendingEnd = null;
@@ -181,6 +198,7 @@ export class Game {
       if (!isFinite(s.heading.x) || s.heading.lengthSq() < 0.5) s.heading.set(0, 1);
       s.vel.set(s.heading.x * 20, -30, s.heading.y * 20);
       s.volume = START_VOLUME;
+      if (i === 0) applyUpgrades(s, services?.economy?.upgrades);
       s.peakVolume = s.volume;
       s.routeDist = this.hydro.routeDistAt(s.pos.x, s.pos.z);
       s.controller = i === 0 ? null : new AIController(s, rand);
@@ -273,6 +291,23 @@ export class Game {
 
   update(dt) {
     this.cameraDirector.update(dt);
+    this.obstacles?.update(dt);
+    this.warnObstacles();
+  }
+
+  /** Callouts for the player: dams ahead (can I smash it?), blocked, smashed. */
+  warnObstacles() {
+    const p = this.player;
+    const ui = this.ctx.ui;
+    if (!p || p.phase !== 'flow' || !ui?.callout || this.state !== 'stream') return;
+    const d = this.obstacles.ahead(p, 240);
+    if (d && !this.damWarned.has(d.id)) {
+      this.damWarned.add(d.id);
+      const es = getLang() === 'es';
+      const need = fmtL(d.strength);
+      if (p.volume >= d.strength) ui.callout(es ? 'PRESA DELANTE' : 'DAM AHEAD', es ? '¡ROMPELA!' : 'SMASH IT!');
+      else ui.callout(es ? `PRESA · NECESITAS ${need}` : `DAM · NEED ${need}`, es ? 'RODEALA O SALTA (E)' : 'GO AROUND OR LEAP (E)');
+    }
   }
 
   // --- UI helpers -------------------------------------------------------------------
@@ -381,4 +416,9 @@ function computeDropZone(terrain, hydro) {
   }
   const radius = Math.max(400, Math.min(1050, coast * 0.42));
   return { x: cx, z: cz, radius };
+}
+
+function fmtL(v) {
+  if (v >= 1e6) return `${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1)}M L`;
+  return `${Math.round(v / 1000)}K L`;
 }

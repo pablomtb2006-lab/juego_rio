@@ -55,6 +55,12 @@ usan `scene.fog` (el dueño de render puede parchear `THREE.ShaderChunk.fog_*` p
 | `eliminated` | `{ victim, by, reason: 'blocked'|'swallowed'|'dried' }` |
 | `finished` | `{ stream, place }` |
 | `matchEnd` | `{ outcome: 'win'|'eliminated', place, player }` |
+| `leap` / `leapLanded` | `{ stream }` / `{ stream, impact }` — salto (E / J / botón SALTO) |
+| `damBreak` | `{ dam, stream, bonus }` — presa rota (game/Obstacles.js) |
+| `damBlocked` | `{ dam, stream }` — un río pequeño choca con una presa |
+
+**Progresión**: `game/upgrades.js` (`UPGRADES`, `applyUpgrades`) + `economy.upgrades`, `economy.buyUpgrade(id)`;
+pantalla `ui/screens/Upgrades.js`. Las mejoras solo se aplican al jugador.
 
 **Servicios**: `storage.get/set`, `economy {coins, owned, equippedSkin, rewardFor, grant, buy, equip, recordMatch}`,
 `ads {showRewarded, showInterstitial, gameplayStart, gameplayStop}`, `analytics.track`.

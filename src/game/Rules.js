@@ -20,9 +20,9 @@ import { archGate } from './arch.js';
  *   - freshly landed streams are protected for RULES.protectTime seconds.
  */
 export const RULES = {
-  absorbK: { lake: 120, puddle: 120, cloud: 75 }, // litres gained overall = min(maxVolume, K·√maxVolume)
+  absorbK: { lake: 150, puddle: 220, cloud: 90 }, // litres gained overall = min(maxVolume, K·√maxVolume)
   swallowTime: { lake: 3.4, puddle: 1.1, cloud: 1.0 },
-  inflow: 14000, // L/s gathered on the biggest rivers (scaled by how much of a valley floor you're on)
+  inflow: 26000, // L/s gathered on the biggest rivers (scaled by how much of a valley floor you're on)
   inflowFrom: 0.35, //   channel strength (0..1) below which there's nothing to gather
   drainRatio: 1.4, // wakes / captures / bumps only drain when the other river is clearly bigger
   evapBase: 0.0032, // fraction of volume per second
@@ -42,7 +42,7 @@ export const RULES = {
   swallowRatio: 3.5, // a head this many times bigger 'swallows' you (UI wording; still a short press)
   bumpSpeed: 9, // m/s: a bigger head catching you slower than this only shoulders you aside
   swallowGain: 0.5,
-  protectTime: 5,
+  protectTime: 8,
   archBonus: 220000,
   dangerLook: 2.6, // seconds of travel scanned ahead for bigger rivers
   liveLength: 380, // metres of channel behind a head that block / can be cut at full strength
@@ -169,7 +169,7 @@ export class Rules {
       s.inWake = null;
       if (s.protectedFor > 0) s.protectedFor = Math.max(0, s.protectedFor - dt);
 
-      this.absorb(s, dt);
+      if (!s.leaping) this.absorb(s, dt);
       if (s.phase === 'drop') {
         this.archCheck(s);
         s.routeDist = hydro.routeDistAt(s.pos.x, s.pos.z);
@@ -197,12 +197,14 @@ export class Rules {
 
       // evaporation: the drought tightens as the match goes on; still water dries fastest
       const stagnant = s.flowSpeed < 12 ? RULES.stagnantMul : 1;
-      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * dt);
+      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * (s.evapMul || 1) * dt);
       if (s.volume < RULES.dryLimit) {
         this.eliminate(s, null, 'dried', 'dried');
         continue;
       }
 
+      game.obstacles?.check(s, dt);
+      if (s.leaping) continue; // airborne: rivers below can't block you
       this.channels(s, dt);
       if (!s.alive) continue;
       this.scanThreats(s);
@@ -253,7 +255,7 @@ export class Rules {
       if (drained <= 0) continue;
       const K = RULES.absorbK[b.kind] ?? RULES.absorbK.lake;
       const eff = Math.min(1, K / Math.sqrt(Math.max(1, b.maxVolume)));
-      const amount = drained * eff;
+      const amount = drained * eff * (s.absorbMul || 1);
       b.drainedBy = s;
       s.addVolume(amount);
       s.absorbing += amount / dt;
@@ -398,10 +400,10 @@ export class Rules {
     const streams = this.game.streams;
     for (let i = 0; i < streams.length; i++) {
       const a = streams[i];
-      if (a.phase !== 'flow') continue;
+      if (a.phase !== 'flow' || a.leaping) continue;
       for (let j = i + 1; j < streams.length; j++) {
         const b = streams[j];
-        if (b.phase !== 'flow') continue;
+        if (b.phase !== 'flow' || b.leaping) continue;
         const r = a.radius + b.radius;
         const dx = b.pos.x - a.pos.x;
         const dz = b.pos.z - a.pos.z;
