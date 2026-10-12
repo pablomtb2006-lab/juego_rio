@@ -329,7 +329,8 @@ export class StreamRenderer {
     const pz = tx;
     const x = d[i * 4];
     const z = d[i * 4 + 2];
-    const w = d[i * 4 + 3];
+    // the visible river swells faster than its collision width: growing has to be felt
+    const w = d[i * 4 + 3] * (this._widthMul ?? 1);
     const sea = terrain.seaLevel + SEA_BIAS;
     const hc = Math.max(d[i * 4 + 1], sea);
     const depth = Math.min(Math.max(0.2 * w, 0.6), 3.5);
@@ -446,6 +447,7 @@ export class StreamRenderer {
   }
 
   syncRibbon(view, time) {
+    this._widthMul = view.widthMul ?? 1;
     const s = view.stream;
     const n = s.trail.count;
     if (n < view.rows) view.clearRibbon();
@@ -502,6 +504,8 @@ export class StreamRenderer {
 
   updateView(view, dt, time) {
     const s = view.stream;
+    // half-width multiplier from volume: ×1 at the start, ×2.2 once you are a giant
+    view.widthMul = 1 + 1.2 * Math.min(1, Math.log10(Math.max(s.volume, 1e5) / 1e5) / 1.7);
     if (view.trailVersion !== s.trail.version) {
       this.syncRibbon(view, time);
       view.trailVersion = s.trail.version;

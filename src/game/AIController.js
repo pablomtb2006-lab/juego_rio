@@ -234,6 +234,21 @@ export class AIController {
     if (this.desired && this.routeOnly <= 0) {
       target = THREE.MathUtils.clamp(signedAngle(_r.x, _r.y, this.desired.x, this.desired.y) / PHYS.steerAngle, -1, 1);
     }
+    // Late in the race the field funnels onto the leader's line, so the finish is a fight
+    // instead of an empty run to the sea.
+    const pl = game.player;
+    if (pl && pl !== s && pl.phase === 'flow' && s.progress > 0.55) {
+      const dx = pl.pos.x - s.pos.x;
+      const dz = pl.pos.z - s.pos.z;
+      const lat = Math.hypot(dx, dz);
+      // only when we are level with them but off to one side
+      if (lat > 160 && lat < 1400 && Math.abs(s.routeDist - pl.routeDist) < 900) {
+        const cross = (dx * s.heading.y - dz * s.heading.x) / lat;
+        const pull = THREE.MathUtils.clamp((s.progress - 0.55) / 0.3, 0, 1) * 0.45;
+        target -= cross * pull;
+      }
+    }
+
     // give the nasty ground a wide berth — otherwise only the player ever pays for it
     const hz = game.hazards?.ahead(s, 170);
     if (hz) {

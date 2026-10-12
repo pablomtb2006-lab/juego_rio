@@ -36,7 +36,7 @@ export const UPGRADES = [
     costs: [250, 550, 1000, 1800, 3000],
     apply: (s, l) => {
       s.leapPower = 1 + 0.1 * l;
-      s.leapCooldown = Math.max(3, 7 - 0.8 * l);
+      s.leapCooldown = Math.max(5, 9 - 0.8 * l);
     },
   },
   {

@@ -207,7 +207,7 @@ export class Game {
     // so the whole field funnels into the same valleys instead of each taking its own island.
     this.raceDir = new THREE.Vector2(player.heading.x, player.heading.y).normalize();
     const raceAngle = Math.atan2(this.raceDir.y, this.raceDir.x);
-    const ARC = 1.15; // ±66° around the race line
+    const ARC = 1.5; // ±86° around the race line: one face, but with room to breathe
     streams.forEach((s, i) => {
       if (i > 0) {
         // fan them across the face, ahead of and beside the player's line

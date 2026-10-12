@@ -22,31 +22,31 @@ import { archGate } from './arch.js';
 export const RULES = {
   absorbK: { lake: 150, puddle: 220, cloud: 90 }, // litres gained overall = min(maxVolume, K·√maxVolume)
   swallowTime: { lake: 3.4, puddle: 1.1, cloud: 1.0 },
-  inflow: 26000, // L/s gathered on the biggest rivers (scaled by how much of a valley floor you're on)
+  inflow: 52000, // L/s gathered on the biggest rivers (scaled by how much of a valley floor you're on)
   inflowFrom: 0.35, //   channel strength (0..1) below which there's nothing to gather
   drainRatio: 1.4, // wakes / captures / bumps only drain when the other river is clearly bigger
-  evapBase: 0.0032, // fraction of volume per second
-  evapRamp: 0.000035, // extra per second of match time (the drought tightens)
+  evapBase: 0.0024, // fraction of volume per second
+  evapRamp: 0.000022, // extra per second of match time (the drought tightens)
   stagnantMul: 1.7, // slow water evaporates faster
-  dryLimit: 15000,
-  ratio: 1.15, // "bigger" means at least 15% more water
+  dryLimit: 9000,
+  ratio: 1.3, // "bigger" means at least 15% more water
   cutFraction: 0.3,
   cutGain: 0.8,
   cutCooldown: 4,
   captureRate: 0.04, // bigger river running along your live channel drains it (fraction/s)
   wakeDrain: 0.05, // smaller river running inside a bigger one's channel loses this fraction/s
-  crossCos: 0.6, // hitting a channel at more than ~53° is a crossing (cut / block); less is a wake
-  blockTime: 0.35, // contact time before you're absorbed = blockTime + blockSlack / (ratio − 1)
-  blockSlack: 1.1, //   (×1.2 bigger → 5.8 s to steer out, ×2 → 1.4 s, ×5 → 0.6 s)
-  blockDrain: 0.3, // fraction of your volume per second while blocked (+0.1 per extra ×1 of size)
+  crossCos: 0.72, // hitting a channel at more than ~53° is a crossing (cut / block); less is a wake
+  blockTime: 0.6, // contact time before you're absorbed = blockTime + blockSlack / (ratio − 1)
+  blockSlack: 1.5, //   (×1.2 bigger → 5.8 s to steer out, ×2 → 1.4 s, ×5 → 0.6 s)
+  blockDrain: 0.22, // fraction of your volume per second while blocked (+0.1 per extra ×1 of size)
   swallowRatio: 3.5, // a head this many times bigger 'swallows' you (UI wording; still a short press)
   bumpSpeed: 9, // m/s: a bigger head catching you slower than this only shoulders you aside
   swallowGain: 0.5,
   protectTime: 8,
-  leaderEvap: 1.45, // the stream in first place evaporates faster: no coasting to the sea
+  leaderEvap: 1.3, // the stream in first place evaporates faster: no coasting to the sea
   archBonus: 220000,
   dangerLook: 2.6, // seconds of travel scanned ahead for bigger rivers
-  liveLength: 380, // metres of channel behind a head that block / can be cut at full strength
+  liveLength: 260, // metres of channel behind a head that block / can be cut at full strength
   liveFade: 350, //   …then fading out over this many metres (the old riverbed is harmless)
   resultDelay: 1.6, // seconds between the player's finish/elimination and the result screen
 };

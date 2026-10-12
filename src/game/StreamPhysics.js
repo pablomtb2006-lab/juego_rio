@@ -40,11 +40,14 @@ export const PHYS = {
   gravTurn: 0.6,
   trailSpacing: 4,
   // leap (E / J / jump button): hop a ridge, a dam or a rival's river
-  leapVy: 46, // m/s launch (× stream.leapPower)
-  leapGravity: 24,
-  leapSpeed: 38, // minimum forward speed while airborne
-  leapCost: 0.06, // fraction of volume
-  leapMinVolume: 40000,
+  // The leap is a TOOL (hop a ridge, a dam, a rival's channel), never a shortcut: airborne you
+  // keep the speed you arrived with minus air drag, and you lose momentum on the splash.
+  leapVy: 33, // m/s launch (× stream.leapPower)
+  leapGravity: 34, //   → ~2 s of air, not 4
+  leapDrag: 0.5, // m/s² bleeding off while airborne
+  leapLandKeep: 0.62, // fraction of speed kept on the splash
+  leapCost: 0.1, // fraction of volume
+  leapMinVolume: 60000,
   leapAirTurn: 1.1, // rad/s of air control
   // drop (skydive): [flare, neutral, dive]
   dropFall: [46, 86, 150],
@@ -159,7 +162,7 @@ export class StreamPhysics {
     const { bus } = this.game.ctx;
     s.leaping = true;
     s.leapVy = PHYS.leapVy * (s.leapPower || 1);
-    s.flowSpeed = Math.max(s.flowSpeed, PHYS.leapSpeed);
+    s.leapSpeed = s.flowSpeed; // you take off with what you had — no free boost
     s.addVolume(-s.volume * PHYS.leapCost);
     s.leapCool = s.leapCooldown;
     bus.emit('leap', { stream: s });
@@ -169,7 +172,8 @@ export class StreamPhysics {
   updateLeap(dt, s) {
     const { terrain, bus } = this.game.ctx;
     rotate(s.heading, THREE.MathUtils.clamp(s.input.steer || 0, -1, 1) * PHYS.leapAirTurn * dt);
-    const sp = Math.max(s.flowSpeed, PHYS.leapSpeed);
+    s.leapSpeed = Math.max(6, (s.leapSpeed ?? s.flowSpeed) - PHYS.leapDrag * dt);
+    const sp = s.leapSpeed;
     s.leapVy -= PHYS.leapGravity * dt;
     const lim = terrain.size * 0.497;
     s.pos.x = THREE.MathUtils.clamp(s.pos.x + s.heading.x * sp * dt, -lim, lim);
@@ -181,7 +185,7 @@ export class StreamPhysics {
       const impact = -s.leapVy;
       s.leaping = false;
       s.pos.y = ground;
-      s.flowSpeed = sp * 0.85;
+      s.flowSpeed = sp * PHYS.leapLandKeep;
       s.trail.push(s.pos.x, s.pos.y, s.pos.z, s.radius);
       bus.emit('leapLanded', { stream: s, impact });
       bus.emit('splash', { x: s.pos.x, y: s.pos.y, z: s.pos.z, size: s.radius * (2.5 + impact / 40), stream: s, kind: 'landing' });

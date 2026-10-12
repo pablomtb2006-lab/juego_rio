@@ -130,7 +130,7 @@ export class Stream {
     this.leaping = false;
     this.leapVy = 0;
     this.leapCool = 0;
-    this.leapCooldown = 7; // s, reduced by upgrades
+    this.leapCooldown = 9; // s, reduced by upgrades
     this.leapPower = 1; // upgrades
     this.upgrades = null;
   }
