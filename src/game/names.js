@@ -4,4 +4,5 @@ export const RIVAL_NAMES = [
   'AguaFiestas', 'SplashBro', 'MeanderMike', 'h2oh_no', 'Rapids_Rex', 'puddle.jumper', 'Estuario',
 ];
 
-export const PERSONALITIES = ['balanced', 'greedy', 'sprinter', 'bully'];
+// AI personalities (AIController.TRAITS): lake-hunter, racer, bully, careful, all-rounder.
+export const PERSONALITIES = ['balanced', 'greedy', 'sprinter', 'bully', 'cautious'];
