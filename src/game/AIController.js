@@ -36,8 +36,15 @@ export class AIController {
   constructor(stream, rand, opts = {}) {
     this.stream = stream;
     this.rand = rand;
-    this.traits = { ...(TRAITS[stream.personality] ?? TRAITS.balanced), ...(opts.traits ?? {}) };
-    this.skill = opts.skill ?? 0.96 + rand() * 0.07;
+    const D = (this.difficulty = opts.difficulty ?? null);
+    const base = { ...(TRAITS[stream.personality] ?? TRAITS.balanced), ...(opts.traits ?? {}) };
+    if (D) {
+      // new-player ramp: bullies hold back and everyone gives bigger rivers a wider berth
+      base.aggression *= D.aggression;
+      base.caution = Math.min(1.4, base.caution * D.caution);
+    }
+    this.traits = base;
+    this.skill = (opts.skill ?? 0.96 + rand() * 0.07) * (D ? D.aiSkill : 1);
     this.rubberBand = opts.rubberBand ?? !stream.isPlayer;
     this.wander = rand() * 100;
     this.planT = rand() * 0.3;
@@ -114,7 +121,7 @@ export class AIController {
       const pl = game.player;
       if (pl && pl !== s) {
         const dp = Math.hypot(x - pl.pos.x, z - pl.pos.z);
-        score += Math.max(0, 1 - dp / 1400) * 1.3;
+        score += Math.max(0, 1 - dp / 1400) * 1.3 * (this.difficulty?.dropNearPlayer ?? 1);
       }
       score += this.rand() * 0.6;
       if (score > bestScore) {
@@ -425,6 +432,7 @@ export class AIController {
     let bestD = 380;
     for (const o of game.streams) {
       if (o === s || o.phase !== 'flow' || o.protectedFor > 0) continue;
+      if (o.isPlayer && this.difficulty && !this.difficulty.huntPlayer) continue;
       if (o.volume * 1.6 > s.volume) continue;
       const d = Math.hypot(o.pos.x - s.pos.x, o.pos.z - s.pos.z);
       if (d < bestD) {

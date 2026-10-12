@@ -197,6 +197,11 @@ export class Obstacles {
     this.buildMesh(rand);
   }
 
+  /** Litres this stream needs to smash `d` (new players face weaker dams — see difficulty.js). */
+  strengthFor(d, s) {
+    return s?.isPlayer ? d.strength * (this.game.difficulty?.damMul ?? 1) : d.strength;
+  }
+
   /** Called by Rules for every flowing stream. */
   check(s, dt) {
     if (s.damBlocked > 0) s.damBlocked = Math.max(0, s.damBlocked - dt * 0.5);
@@ -212,7 +217,7 @@ export class Obstacles {
       if (Math.abs(along) > reach || Math.abs(lat) > d.width * 0.5 + s.radius * 0.4) continue;
       // airborne above the logs: sail over
       if (s.leaping && s.pos.y > d.y + DAM_HEIGHT) continue;
-      if (s.volume >= d.strength) {
+      if (s.volume >= this.strengthFor(d, s)) {
         this.breakDam(d, s);
         continue;
       }
@@ -224,6 +229,7 @@ export class Obstacles {
       }
       s.flowSpeed = Math.min(s.flowSpeed, 2.5);
       s.damBlocked = (s.damBlocked || 0) + dt * 1.5;
+      s.lastDam = d; // result screen: "you were N litres short"
       if (s.damBlocked > 0.6) s.wantLeap = true; // AI / autopilot hint
       const now = this.game.time;
       if (!s._damMsg || now - s._damMsg > 2.5) {

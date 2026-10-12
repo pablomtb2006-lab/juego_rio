@@ -21,7 +21,7 @@ function daysBetween(a, b) {
  *   economy.grant(coins, reason), economy.buy(skinId) -> bool, economy.equip(skinId) -> bool
  *   economy.recordMatch(place)
  * Added:
- *   economy.settleMatch({ outcome, place, total, peakVolume, cuts, eliminations, duration })
+ *   economy.settleMatch({ outcome, place, total, peakVolume, cuts, eliminations, objectives, duration })
  *       -> { items: [{ key, amount, detail }], total }   (grants + records stats once)
  *   economy.dailyStatus() / economy.claimDaily(multiplier)
  *   economy.freeCoinsLeft() / economy.claimFreeCoins()
@@ -91,7 +91,7 @@ export class Economy {
   }
 
   /** Itemised reward for a finished match (does not grant). */
-  breakdown({ outcome, place, peakVolume = 0, total = 16, cuts = 0, eliminations = 0, firstWin }) {
+  breakdown({ outcome, place, peakVolume = 0, total = 16, cuts = 0, eliminations = 0, objectives = 0, objectivesDone = 0, firstWin }) {
     const items = [];
     const quit = outcome === 'quit';
     items.push({ key: 'participation', amount: E.participation });
@@ -105,14 +105,15 @@ export class Economy {
     if (vol > 0) items.push({ key: 'volume', amount: vol, detail: peakVolume });
     if (cuts > 0) items.push({ key: 'cuts', amount: cuts * E.perCut, detail: cuts });
     if (eliminations > 0) items.push({ key: 'eliminations', amount: eliminations * E.perElimination, detail: eliminations });
+    if (objectives > 0) items.push({ key: 'objectives', amount: objectives, detail: objectivesDone });
     const fw = firstWin ?? (place === 1 && outcome === 'win' && this.flags.firstWinDay !== dayKey());
     if (fw) items.push({ key: 'firstWin', amount: E.firstWinOfDay });
     return { items, total: items.reduce((a, i) => a + i.amount, 0) };
   }
 
   /** Grant the match reward, update stats; call exactly once per match. */
-  settleMatch({ outcome, place, total = 16, peakVolume = 0, cuts = 0, eliminations = 0, duration = 0 }) {
-    const result = this.breakdown({ outcome, place, total, peakVolume, cuts, eliminations });
+  settleMatch({ outcome, place, total = 16, peakVolume = 0, cuts = 0, eliminations = 0, objectives = 0, objectivesDone = 0, duration = 0 }) {
+    const result = this.breakdown({ outcome, place, total, peakVolume, cuts, eliminations, objectives, objectivesDone });
     if (result.items.some((i) => i.key === 'firstWin')) this.flags.firstWinDay = dayKey();
     this.recordMatch(place, { outcome, peakVolume, cuts, eliminations, duration }, false);
     this.grant(result.total, 'match');

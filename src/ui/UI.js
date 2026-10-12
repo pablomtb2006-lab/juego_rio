@@ -15,6 +15,7 @@ import { Callouts } from './hud/Callouts.js';
 import { NameTags } from './hud/NameTags.js';
 import { Minimap, FullMap } from './hud/Minimap.js';
 import { Hud } from './hud/Hud.js';
+import { Coach } from './hud/Coach.js';
 import { Lobby } from './screens/Lobby.js';
 import { Skins } from './screens/Skins.js';
 import { Upgrades } from './screens/Upgrades.js';
@@ -68,6 +69,7 @@ export class UI {
     this.tags = new NameTags(this);
     this.callouts = new Callouts(this);
     this.hud = new Hud(this);
+    this.coach = new Coach(this);
     this.minimap = new Minimap(this, this.painter);
     this.fullmap = new FullMap(this, this.painter);
     this.lobby = new Lobby(this);
@@ -165,6 +167,12 @@ export class UI {
       const p = this.ctx.game.player;
       if (stream !== p && place === 1 && p?.alive) this.callouts.show(t('co.firstAtSea', { name: stream.name }), { priority: 2, hold: 2.4 });
       this.checkAlive();
+    });
+    bus.on('objective', ({ objective }) => {
+      this.callouts.float(`${objective.icon} ${objective.text}`, { kind: 'gold' });
+      this.toast(`${t('hud.goalDone')} +${objective.reward}`, 'gold');
+      this.sfx('reward');
+      vibrate(this.ctx, [20, 40, 20]);
     });
     bus.on('matchEnd', ({ outcome, place, player }) => {
       const m = this.match;
@@ -523,6 +531,7 @@ export class UI {
       if (heavy) this.minimap.update(dt);
       this.flushAbsorb(dt);
       this.watchMilestones(dt);
+      this.coach.update(dt);
     }
     if (heavy) this.tags.update(dt, !!playing && this.ctx.services.settings.get('nameTags') !== false && !this.fullmap.open);
     this.callouts.update(dt);

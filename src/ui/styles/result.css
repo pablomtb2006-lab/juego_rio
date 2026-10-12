@@ -518,3 +518,29 @@
     display: none;
   }
 }
+
+/* --- "you were this close" line: what makes a loss turn into one more go ------------ */
+.result__near {
+  margin-top: 6px;
+  min-height: 22px;
+  text-align: center;
+}
+.result__near .near__in {
+  display: inline-block;
+  padding: 5px 14px 4px;
+  border-radius: 999px;
+  background: rgba(255, 210, 63, 0.16);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 210, 63, 0.5);
+  color: #ffe58a;
+  font-weight: 800;
+  font-size: 14px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  animation: near-in 0.5s 0.35s ease-out both;
+}
+@keyframes near-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 560px) {
+  .result__near .near__in { font-size: 12.5px; padding: 4px 11px 3px; }
+}

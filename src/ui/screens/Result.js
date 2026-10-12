@@ -23,6 +23,7 @@ export class Result {
           <div class="result__place" data-ref="place"></div>
           <div class="result__title" data-ref="title"></div>
           <div class="result__by" data-ref="by"></div>
+          <div class="result__near" data-ref="near"></div>
         </div>
         <div class="result__stats" data-ref="stats"></div>
         <div class="result__card" data-ref="card"></div>
@@ -64,6 +65,7 @@ export class Result {
     } else this.r.by.innerHTML = '';
     const p = info.player;
     const dist = Number.isFinite(p.distToSea) ? p.distToSea : 0;
+    this.r.near.innerHTML = this.nearMiss(info);
     this.r.stats.innerHTML = [
       tile('drop', fmtCompact(p.peakVolume) + ' L', t('res.peak')),
       tile('clock', fmtTime(info.time), t('res.time')),
@@ -79,6 +81,52 @@ export class Result {
     } else this.confetti.stop();
     // the revive offer only makes sense if the game supports it
     s.canRevive = !win && !info.reviveUsed && typeof ui.ctx.game.revivePlayer === 'function';
+  }
+
+  /**
+   * One line of "you were this close", the thing that makes a player press OTRA VEZ.
+   * Picks the most motivating true fact available, most specific first.
+   */
+  nearMiss(info) {
+    const ui = this.ui;
+    const es = ui.lang !== 'en';
+    const p = info.player;
+    const total = ui.ctx.game.streams.length || 24;
+    const beat = Math.max(0, total - (info.place || total));
+    const line = (txt) => `<span class="near__in">${esc(txt)}</span>`;
+
+    if (info.outcome !== 'win') {
+      // blocked by a dam you could almost break
+      const dam = p.lastDam;
+      if (dam && !dam.broken && (p.damBlocked ?? 0) > 0) {
+        const need = (ui.ctx.game.obstacles?.strengthFor(dam, p) ?? dam.strength) - p.volume;
+        if (need > 0) return line(es ? `Te faltaban ${fmtCompact(need)} L para romper la presa` : `${fmtCompact(need)} L short of smashing the dam`);
+      }
+      // how close to the sea you got — the most motivating fact when the sea was in sight
+      const dist = Number.isFinite(p.distToSea) ? p.distToSea : null;
+      const seaLine = () => {
+        const d = dist < 1000 ? `${Math.round(dist)} m` : `${fmtFixed(dist / 1000, 1)} km`;
+        return line(es ? `Estuviste a ${d} del mar` : `You got ${d} from the sea`);
+      };
+      if (dist != null && dist < 1200) return seaLine();
+      // cut off by a rival barely bigger than you
+      const by = info.by;
+      if (by && by.volume > p.peakVolume && by.volume < p.peakVolume * 1.45) {
+        return line(es ? `${by.name} solo tenía ${fmtCompact(by.volume - p.peakVolume)} L más que tú` : `${by.name} had just ${fmtCompact(by.volume - p.peakVolume)} L more than you`);
+      }
+      if (dist != null && dist < 3000) return seaLine();
+      if (beat > 0) return line(es ? `Superaste a ${beat} de ${total} ríos` : `You outlasted ${beat} of ${total} streams`);
+      return '';
+    }
+
+    // finished: how close to the podium / your own record
+    if (info.place > 1) {
+      const n = info.place - 1;
+      return line(es ? `A ${n} ${n === 1 ? 'puesto' : 'puestos'} del primero` : `${n} ${n === 1 ? 'place' : 'places'} off first`);
+    }
+    const best = ui.ctx.services.economy.stats?.bestVolume ?? 0;
+    if (p.peakVolume > best) return line(es ? '¡Nuevo récord de litros!' : 'New personal best!');
+    return line(es ? `Primero de ${total} ríos` : `First of ${total} streams`);
   }
 
   close() {
@@ -119,6 +167,8 @@ export class Result {
       peakVolume: s.player.peakVolume,
       cuts: s.cuts,
       eliminations: s.eliminations,
+      objectives: this.ui.ctx.game.objectives?.claim() ?? 0,
+      objectivesDone: this.ui.ctx.game.objectives?.doneCount ?? 0,
       duration: s.time,
     });
     ads.noteMatchEnd({ won: s.outcome === 'win' && s.place === 1 });

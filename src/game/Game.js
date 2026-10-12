@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { Stream } from './Stream.js';
 import { Obstacles } from './Obstacles.js';
 import { applyUpgrades } from './upgrades.js';
+import { difficultyFor, FULL_DIFFICULTY } from './difficulty.js';
+import { Objectives } from './Objectives.js';
 import { getLang } from '../ui/i18n.js';
 import { StreamPhysics } from './StreamPhysics.js';
 import { Rules, RULES } from './Rules.js';
@@ -50,6 +52,7 @@ export class Game {
     this.physics = new StreamPhysics(this);
     this.rules = new Rules(this);
     this.cameraDirector = new CameraDirector(this);
+    this.objectives = new Objectives(this);
     this._tags = new Map();
 
     const bus = ctx.bus;
@@ -137,7 +140,7 @@ export class Game {
     this.pendingEnd = { outcome, t: RULES.resultDelay };
   }
 
-  startMatch({ seed = this.ctx.params.seed + (Date.now() % 1000), skin, intro = true } = {}) {
+  startMatch({ seed = this.ctx.params.seed + (Date.now() % 1000), skin, intro = true, difficulty } = {}) {
     this.ensureWorldData();
     const { world, terrain, services } = this.ctx;
     world.reset();
@@ -154,6 +157,8 @@ export class Game {
     this._tags.clear();
     const rand = mulberry32(seed);
     this.rand = rand;
+    // new players get a softer ramp over their first matches (see game/difficulty.js)
+    this.difficulty = difficulty ?? (this.ctx.params.capture ? FULL_DIFFICULTY : difficultyFor(services?.economy?.stats?.matches ?? 0));
 
     const player = new Stream({
       id: 0,
@@ -201,12 +206,13 @@ export class Game {
       if (i === 0) applyUpgrades(s, services?.economy?.upgrades);
       s.peakVolume = s.volume;
       s.routeDist = this.hydro.routeDistAt(s.pos.x, s.pos.z);
-      s.controller = i === 0 ? null : new AIController(s, rand);
+      s.controller = i === 0 ? null : new AIController(s, rand, { difficulty: this.difficulty });
     });
     player.controller = new PlayerController(player, this.input, new AIController(player, rand, { skill: 1, rubberBand: false }));
 
     this.streams = streams;
     this.player = player;
+    this.objectives.start(seed);
     this.cameraDirector.startMatch(player, { intro });
     this.setState('drop');
     this.ctx.services?.analytics?.track('match_start', { skin: player.skin });
@@ -250,6 +256,7 @@ export class Game {
   }
 
   toMenu() {
+    this.objectives.stop();
     this.streams = [];
     this.player = null;
     this.pendingEnd = null;
@@ -291,6 +298,7 @@ export class Game {
 
   update(dt) {
     this.cameraDirector.update(dt);
+    if (this.state === 'drop' || this.state === 'stream') this.objectives.update(dt);
     this.obstacles?.update(dt);
     this.warnObstacles();
   }
@@ -304,8 +312,9 @@ export class Game {
     if (d && !this.damWarned.has(d.id)) {
       this.damWarned.add(d.id);
       const es = getLang() === 'es';
-      const need = fmtL(d.strength);
-      if (p.volume >= d.strength) ui.callout(es ? 'PRESA DELANTE' : 'DAM AHEAD', es ? '¡ROMPELA!' : 'SMASH IT!');
+      const strength = this.obstacles.strengthFor(d, p);
+      const need = fmtL(strength);
+      if (p.volume >= strength) ui.callout(es ? 'PRESA DELANTE' : 'DAM AHEAD', es ? '¡ROMPELA!' : 'SMASH IT!');
       else ui.callout(es ? `PRESA · NECESITAS ${need}` : `DAM · NEED ${need}`, es ? 'RODEALA O SALTA (E)' : 'GO AROUND OR LEAP (E)');
     }
   }

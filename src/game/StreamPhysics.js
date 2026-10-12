@@ -133,7 +133,7 @@ export class StreamPhysics {
     if (_r.lengthSq() > 0.5) s.heading.multiplyScalar(0.35).addScaledVector(_r, 0.65).normalize();
     s.flowSpeed = THREE.MathUtils.clamp(hs * 0.45 + impact * 0.12 + 8, 12, 40);
     s.vel.set(s.heading.x * s.flowSpeed, 0, s.heading.y * s.flowSpeed);
-    s.protectedFor = this.game.rules?.config.protectTime ?? 3;
+    s.protectedFor = (this.game.rules?.config.protectTime ?? 3) + (s.isPlayer ? this.game.difficulty?.protectBonus ?? 0 : 0);
     s.routeDist = hydro.routeDistAt(s.pos.x, s.pos.z);
     s.distToSea = s.routeDist;
     s.landRouteDist = Math.max(1, s.routeDist);

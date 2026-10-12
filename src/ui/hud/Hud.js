@@ -25,6 +25,7 @@ export class Hud {
           <div class="chip" data-ref="aliveChip">${icon('streams')}<b data-ref="alive">16</b><small data-i18n="hud.alive"></small></div>
           <div class="chip chip--place" data-ref="placeChip"><b data-ref="place">#1</b><small data-i18n="hud.place"></small></div>
         </div>
+        <div class="goals" data-ref="goals"></div>
       </div>
       <div class="feed" data-ref="feed"></div>
       <div class="alt" data-ref="alt">
@@ -130,12 +131,29 @@ export class Hud {
     if (this.ui.ctx.params.capture) el.classList.add('is-in');
   }
 
+  /** Match objectives (game/Objectives.js): rebuilt only when something changes. */
+  renderGoals() {
+    const list = this.ui.ctx.game.objectives?.list ?? [];
+    const key = list.map((o) => `${o.id}${o.done ? 1 : 0}${Math.round((o.progress / o.target) * 20)}`).join('|');
+    if (key === this._goalKey) return;
+    this._goalKey = key;
+    this.r.goals.innerHTML = list
+      .map((o) => {
+        const pct = Math.round(Math.min(1, o.progress / o.target) * 100);
+        const n = o.counter && o.on !== 'volume' ? `<em>${Math.floor(o.progress)}/${o.target}</em>` : '';
+        return `<div class="goal${o.done ? ' is-done' : ''}"><i>${o.done ? '✓' : o.icon}</i><span>${o.text}${n}</span><u style="--p:${pct}%"></u></div>`;
+      })
+      .join('');
+  }
+
   update(dt, heavy) {
     const ui = this.ui;
     const { game, terrain } = ui.ctx;
     const p = game.player;
     if (!p) return;
     const r = this.r;
+
+    this.renderGoals();
 
     // --- distance & litres (top centre, like the trailer) ---
     let dist = p.phase === 'drop' ? terrain.distToSea(p.pos.x, p.pos.z) : p.distToSea;
