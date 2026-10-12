@@ -119,7 +119,7 @@ void main() {
   float foam = max(contact, arms * 0.9);
   // churn ring around the throat
   foam = max(foam, uDrain * smoothstep(0.5, 0.8, fn) * (1.0 - smoothstep(0.0, uRadius * 0.25, abs(vr - uRadius * 0.12))));
-  col = mix(col, vec3(1.2), foam);
+  col = mix(col, vec3(1.22, 1.3, 1.36), foam);
 
   float waterA = aastep(0.0, depth) * basin;
   float alphaW = mix(0.55, 0.95, smoothstep(0.1, 3.0, depth));

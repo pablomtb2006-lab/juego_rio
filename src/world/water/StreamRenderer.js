@@ -36,12 +36,13 @@ function getSharedIndex() {
     for (let c = 0; c < COLS - 1; c++) {
       const a = r * COLS + c;
       const b = a + COLS;
+      // counter-clockwise seen from above (rows advance along the flow, columns left → right)
       idx[o++] = a;
-      idx[o++] = b;
-      idx[o++] = a + 1;
       idx[o++] = a + 1;
       idx[o++] = b;
+      idx[o++] = a + 1;
       idx[o++] = b + 1;
+      idx[o++] = b;
     }
   }
   sharedIndex = idx;
@@ -530,13 +531,13 @@ export class StreamRenderer {
       bu.uSquash.value = 0;
       bu.uAlpha.value = 1;
       this.emitDrop(view, dt);
-    } else if (landAge < 0.7) {
+    } else if (landAge < 0.3) {
       view.blob.visible = true;
-      const k = landAge / 0.7;
+      const k = landAge / 0.3;
       bu.uCenter.value.set(view.landPos.x, view.landPos.y + blobR * 0.35 * (1 - k), view.landPos.z);
       bu.uSquash.value = Math.min(1, landAge / 0.22);
       bu.uStretch.value *= 0.8;
-      bu.uAlpha.value = 1 - THREE.MathUtils.smoothstep(k, 0.35, 1);
+      bu.uAlpha.value = 1 - THREE.MathUtils.smoothstep(k, 0.15, 0.8);
     } else {
       view.blob.visible = false;
     }

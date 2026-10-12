@@ -137,7 +137,7 @@ void main() {
   vec3 B = cross(N0, T);
 
   float rapids = smoothstep(0.12, 0.5, steep);
-  float nearHead = 1.0 - smoothstep(0.0, 7.0 * w, uHeadS - s);
+  float nearHead = 1.0 - smoothstep(0.0, 4.0 * w, uHeadS - s);
   float agit = clamp(max(nearHead * 0.85, rapids) + uSurge * 0.3, 0.0, 1.0);
 
   // flowing ripples, stretched along the flow
@@ -154,6 +154,14 @@ void main() {
   float lstreak = smoothstep(0.5, 0.85, vnoise(vec2(lat * 0.45 + 2.0, u * 0.055)));
   vec3 col = mix(uShallow, uDeep, clamp(core * 0.8 + (band - 0.5) * 0.35, 0.0, 1.0));
   col = mix(col, uShallow * 1.2, lstreak * 0.4 * (1.0 - agit * 0.5));
+  // animated caustics: two voronoi layers drifting with the current at different speeds
+  {
+    vec2 c1 = voronoi(vec2(lat * 0.35, (phi - t * uFlowSpeed * 0.8) * 0.12) + vec2(t * 0.15, 0.0));
+    vec2 c2 = voronoi(vec2(lat * 0.5 + 9.0, (phi - t * uFlowSpeed * 1.1) * 0.17) - vec2(0.0, t * 0.2));
+    float caus = (1.0 - smoothstep(0.0, 0.11, c1.y - c1.x)) * (1.0 - smoothstep(0.0, 0.16, c2.y - c2.x));
+    col += uShallow * caus * 0.9 * lod1 * (0.4 + 0.6 * core) * (1.0 - agit * 0.6);
+  }
+  col = mix(col, col * vec3(0.92, 1.05, 1.08), 0.5); // keep the body saturated turquoise
   vec3 lightB = waterBodyLight(N);
   col *= lightB;
   vec3 R = reflect(-V, N);
@@ -164,15 +172,16 @@ void main() {
   float fnA = vnoise(vec2(lat * 0.5, u * 0.045));
   float fnB = vnoise(vec2(lat * 1.3 + 3.0, u * 0.13));
   float streaks = fnA * 0.62 + fnB * 0.38;
-  float streakFoam = aastep(mix(0.72, 0.40, agit), streaks);
+  float streakFoam = aastep(mix(0.8, 0.56, agit), streaks);
   float lam = 2.4 + w * 0.3;
   float arcPh = (u + 0.6 * w * tl * tl) / lam + fnA * 0.7;
-  float arcs = aastep(mix(0.93, 0.68, agit), fract(arcPh)) * aastep(0.42 - agit * 0.2, fnB);
+  float arcs = aastep(mix(0.95, 0.8, agit), fract(arcPh)) * aastep(0.5 - agit * 0.2, fnB);
   float edgeN = vnoise(vec2(lat * 0.7, u * 0.18) + 11.0);
-  float edge = aastep(0.8 - edgeN * 0.25 - agit * 0.12, at);
+  float edge = aastep(0.9 - edgeN * 0.18 - agit * 0.08, at);
+  edge *= 1.0 - aastep(1.0 + edgeN * 0.05, at); // a crisp foam line, not a white bank
   float foam = max(max(streakFoam * mix(0.6, 1.0, agit), arcs * mix(0.6, 1.0, agit)), edge);
   // sparse speckles everywhere (bubbles)
-  foam = max(foam, aastep(0.86, vnoise(vec2(lat * 2.2, u * 0.9))) * 0.75 * lod2);
+  foam = max(foam, aastep(0.9, vnoise(vec2(lat * 2.2, u * 0.9))) * 0.6 * lod2);
 
   // the cut: a gap with frothy edges where a bigger river crossed
   float gap = smoothstep(0.4, 0.8, cut);
@@ -185,12 +194,12 @@ void main() {
     float ds = s - uHeadS;
     float c1 = vnoise3(vec3(lat * 0.32, ds * 0.32 - t * 2.4, t * 1.6));
     float c2 = vnoise3(vec3(lat * 0.85, ds * 0.85 - t * 4.2, t * 2.2) + 5.0);
-    float hf = aastep(mix(0.78, 0.28, front), c1 * 0.6 + c2 * 0.4);
-    foam = max(foam, hf);
+    float hf = aastep(mix(0.86, 0.46, front), c1 * 0.6 + c2 * 0.4);
+    foam = max(foam * 0.5, hf);
   }
 #endif
 
-  vec3 foamCol = uFoam * (uSkyColor * 0.3 + uSunColor * 0.85) * 1.2;
+  vec3 foamCol = uFoam * vec3(1.22, 1.3, 1.36) * (0.82 + 0.28 * max(dot(N, uSunDir), 0.0));
   float alpha = mix(0.8, 0.94, core);
 
 #if SKIN_FX == 1
@@ -238,7 +247,7 @@ void main() {
 #endif
 
 #if SKIN_FX != 1 && SKIN_FX != 2
-  col = mix(col, sky, F * 0.85);
+  col = mix(col, sky, F * 0.6);
 #endif
   col += sunSpecular(N, V, 500.0, 40.0) * 0.9;
 #if SKIN_FX == 0 || SKIN_FX == 5
@@ -249,7 +258,7 @@ void main() {
 
   col = mix(col, foamCol, foam);
   alpha = max(alpha, foam);
-  alpha *= 1.0 - smoothstep(0.98, EXT, at + (edgeN - 0.5) * 0.15);
+  alpha *= 1.0 - smoothstep(0.98, 1.08, at + (edgeN - 0.5) * 0.08);
   alpha *= 1.0 - gap;
 
   // eliminated: water drains back from the head, leaving a wet stain that dries
@@ -368,7 +377,7 @@ void main() {
   col += sunSpecular(N, V, 350.0, 25.0) * 1.4;
   col += uShallow * pow(1.0 - NdV, 3.0) * 0.7;
   col += uGlow * 2.0 * (0.4 + 0.6 * pow(1.0 - NdV, 2.0));
-  vec3 foamCol = uFoam * (uSkyColor * 0.3 + uSunColor * 0.85) * 1.25;
+  vec3 foamCol = uFoam * vec3(1.22, 1.3, 1.36) * (0.82 + 0.28 * max(dot(N, uSunDir), 0.0));
   col = mix(col, foamCol, foam);
   float alpha = mix(0.84, 1.0, max(F, foam)) * uAlpha;
   gl_FragColor = vec4(applyAtmosphere(col, vWorldPos), alpha);

@@ -45,7 +45,6 @@ export class Engine {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.NoToneMapping; // tone mapping happens in PostFX
     renderer.shadowMap.enabled = quality.shadows;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -155,6 +154,7 @@ export class Engine {
     ctx.atmosphere.update(dt, this.time);
     ctx.ui.update(dt, this.time);
     ctx.audio.update(dt, this.time);
+    ctx.postfx?.update?.(dt);
   }
 
   render(dt) {

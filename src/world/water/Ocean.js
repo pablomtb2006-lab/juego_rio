@@ -150,7 +150,7 @@ void main() {
   col += uShallow * ringGlow;
   foam = max(foam, ringFoam);
 
-  vec3 foamCol = vec3(1.25) * (0.8 + 0.2 * max(dot(N, uSunDir), 0.0));
+  vec3 foamCol = vec3(1.22, 1.3, 1.36) * (0.8 + 0.2 * max(dot(N, uSunDir), 0.0));
   col = mix(col, foamCol, foam);
 
   float alpha = mix(0.55, 1.0, smoothstep(0.0, 4.5, depth));

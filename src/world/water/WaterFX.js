@@ -69,7 +69,7 @@ void main() {
   vType = iMisc.x;
   vSeed = iMisc.z;
   vAdd = iMisc.w;
-  vFade = smoothstep(0.0, 0.06, x) * (1.0 - smoothstep(0.55, 1.0, x)) * smoothstep(1.5 + size, 4.0 + size * 2.0, dc);
+  vFade = smoothstep(0.0, 0.06, x) * (1.0 - smoothstep(0.55, 1.0, x)) * smoothstep(1.5 + size, 4.0 + size * (iMisc.x > 1.5 && iMisc.x < 2.5 ? 4.0 : 2.0), dc);
   if (any(isnan(gl_Position)) || any(isinf(gl_Position))) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }
 `;
@@ -164,7 +164,7 @@ void main() {
   float seed = uParams.w;
   float n = vnoise(vLocal * 7.0 + seed);
   float n2 = vnoise(vec2(ang * 4.0, r * 6.0) + seed * 3.0);
-  vec3 foamCol = vec3(1.2) * (uSkyColor * 0.35 + uSunColor * 0.75);
+  vec3 foamCol = vec3(1.22, 1.3, 1.36);
   vec3 col = foamCol;
   float a = 0.0;
   if (type == 0) {

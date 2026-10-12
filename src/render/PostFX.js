@@ -119,7 +119,8 @@ export class PostFX {
     this.composer.setSize(w, h);
   }
 
-  render(dt) {
+  /** Time-based state (smoothing, flash/veil decay). Runs every simulation tick, rendered or not. */
+  update(dt) {
     const ctx = this.ctx;
     const g = this.grade.uniforms;
 
@@ -160,7 +161,9 @@ export class PostFX {
     this.pulseAmt *= Math.exp(-dt * 5);
     if (this.flashAmt < 0.002) this.flashAmt = 0;
     if (this.pulseAmt < 0.002) this.pulseAmt = 0;
+  }
 
+  render(dt) {
     this.composer.render(dt);
   }
 }
