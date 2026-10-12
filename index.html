@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a4a6a" />
+    <meta name="description" content="Río Royale — battle royale de ríos: cae del cielo, absorbe lagos y sé el primero en llegar al mar." />
+    <title>Río Royale</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #0a2a3a; touch-action: none; }
+      canvas { display: block; }
+      #loading {
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 16px; background: radial-gradient(circle at 50% 40%, #1c6c8f, #06202e); color: #fff;
+        font-family: system-ui, sans-serif; z-index: 10; transition: opacity 0.6s;
+      }
+      #loading .bar { width: min(320px, 70vw); height: 10px; border-radius: 6px; background: rgba(255,255,255,0.15); overflow: hidden; }
+      #loading .fill { height: 100%; width: 0; background: linear-gradient(90deg, #35d0d6, #ffd23f); transition: width 0.2s; }
+      #loading .label { font-weight: 700; letter-spacing: 0.5px; opacity: 0.85; }
+    </style>
+  </head>
+  <body>
+    <div id="loading">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="label">Cargando…</div>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
