@@ -294,7 +294,7 @@ vec3 skyReflection(vec3 d, float rough) {
   d.y = abs(d.y) * 0.9 + 0.02; // never reflect the ground: stylized water always mirrors sky
   d = normalize(d);
 #if defined(WATER_ENV_CUBEUV)
-  return textureCubeUV(uEnvMap, d, rough) * uEnvIntensity;
+  return textureCubeUV(uEnvMap, d, rough).rgb * uEnvIntensity;
 #elif defined(WATER_ENV_CUBE)
   return textureLod(uEnvMap, vec3(-d.x, d.y, d.z), rough * 6.0).rgb * uEnvIntensity;
 #elif defined(WATER_ENV_EQUIRECT)
