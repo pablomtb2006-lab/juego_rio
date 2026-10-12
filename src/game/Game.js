@@ -21,6 +21,7 @@ import { RIVAL_COLORS } from './skins.js';
 import { mulberry32 } from '../core/random.js';
 import { runScenario } from './Scenarios.js';
 
+const _zero = new THREE.Vector2();
 export const RIVAL_COUNT = 23; // 24 streams: crowded valleys, more fights
 export const DROP_ALTITUDE = 3300;
 export const START_VOLUME = 150000;
@@ -201,12 +202,20 @@ export class Game {
       player.pos.set(zone.x, DROP_ALTITUDE, zone.z);
       player.heading.set(-zone.x, -zone.z).normalize();
     }
+    // Everyone races down the SAME face of the mountain: the one the player's glide line
+    // points at. Rivals start spread across that face in an arc, not all around the summit,
+    // so the whole field funnels into the same valleys instead of each taking its own island.
+    this.raceDir = new THREE.Vector2(player.heading.x, player.heading.y).normalize();
+    const raceAngle = Math.atan2(this.raceDir.y, this.raceDir.x);
+    const ARC = 1.15; // ±66° around the race line
     streams.forEach((s, i) => {
       if (i > 0) {
-        const a = (i / streams.length) * Math.PI * 2 + rand() * 0.4;
-        const r = zone.radius * (0.35 + rand() * 0.55);
+        // fan them across the face, ahead of and beside the player's line
+        const spread = ((i - 1) / Math.max(1, streams.length - 2)) * 2 - 1;
+        const a = raceAngle + spread * ARC + (rand() - 0.5) * 0.25;
+        const r = zone.radius * (0.45 + rand() * 0.5);
         s.pos.set(zone.x + Math.cos(a) * r, DROP_ALTITUDE - 150 + rand() * 300, zone.z + Math.sin(a) * r);
-        s.heading.set(Math.cos(a + Math.PI + (rand() - 0.5)), Math.sin(a + Math.PI + (rand() - 0.5))).normalize();
+        s.heading.copy(this.raceDir).rotateAround(_zero, (rand() - 0.5) * 0.5).normalize();
       }
       if (!isFinite(s.heading.x) || s.heading.lengthSq() < 0.5) s.heading.set(0, 1);
       s.vel.set(s.heading.x * 20, -30, s.heading.y * 20);

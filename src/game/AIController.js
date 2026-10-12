@@ -123,6 +123,14 @@ export class AIController {
         const dp = Math.hypot(x - pl.pos.x, z - pl.pos.z);
         score += Math.max(0, 1 - dp / 1400) * 1.3 * (this.difficulty?.dropNearPlayer ?? 1);
       }
+      // stay on the face of the mountain everyone is racing down
+      const face = game.raceDir;
+      if (face) {
+        const ox = x - zone.x;
+        const oz = z - zone.z;
+        const ol = Math.hypot(ox, oz) || 1;
+        score += ((ox * face.x + oz * face.y) / ol) * 2.2;
+      }
       score += this.rand() * 0.6;
       if (score > bestScore) {
         bestScore = score;
@@ -484,9 +492,12 @@ export class AIController {
     if (this.goal === 'hunt' && this.prey && s.pos.distanceTo(this.prey.pos) < 120) want = 0.8;
     if (s.routeDist < 700) want = Math.max(want, 0.6);
     if (s.flowSpeed > 25 && Math.abs(this.steer) < 0.25 && s.danger < 0.05) want = Math.max(want, 0.25);
-    if (this.rand() < want * T.surge) {
+    // the player kicking is the signal to kick too: never be dropped just for not reacting
+    const p = game.player;
+    if (p && p !== s && p.surging && p.phase === 'flow' && s.routeDist > p.routeDist - 150) want = Math.max(want, 0.95);
+    if (this.rand() < want * Math.max(T.surge, 0.55)) {
       this.surgeT = 1 + T.surge * 1.2;
-      this.surgeCool = 5 + this.rand() * 5;
+      this.surgeCool = 2.5 + this.rand() * 3.5;
       return true;
     }
     this.surgeCool = 0.5;
@@ -501,7 +512,8 @@ export class AIController {
     if (p && p !== s && p.phase === 'flow' && isFinite(p.routeDist) && isFinite(s.routeDist)) {
       const diff = s.routeDist - p.routeDist; // + = bot behind the player
       // ahead: ease off progressively; behind: only catch up from far back (no surprise rams)
-      const k = diff < 0 ? Math.max(diff / 4000, -0.06) : diff < 300 ? 0 : Math.min((diff - 300) / 1400, 1) * 0.12;
+      // behind: chase hard so a surging player never simply drives away from the field
+      const k = diff < 0 ? Math.max(diff / 4000, -0.06) : diff < 120 ? 0 : Math.min((diff - 120) / 900, 1) * 0.3;
       target *= 1 + k;
     }
     s.speedMul += (target - s.speedMul) * Math.min(1, dt * 0.5);
