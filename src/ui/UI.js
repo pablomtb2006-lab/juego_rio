@@ -168,6 +168,11 @@ export class UI {
       if (stream !== p && place === 1 && p?.alive) this.callouts.show(t('co.firstAtSea', { name: stream.name }), { priority: 2, hold: 2.4 });
       this.checkAlive();
     });
+    bus.on('hazardHit', ({ stream, kind }) => {
+      if (stream !== this.ctx.game.player) return;
+      this.callouts.show(t(`hz.${kind}`), { priority: 3, hold: 1.4 });
+      vibrate(this.ctx, [25, 20, 25]);
+    });
     bus.on('droughtStart', () => this.callouts.show(t('co.droughtGo'), { priority: 3, hold: 2.6 }));
     bus.on('droughtWarn', ({ victim }) => {
       if (victim !== this.ctx.game.player) return;

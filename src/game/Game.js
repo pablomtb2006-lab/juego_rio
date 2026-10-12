@@ -6,6 +6,7 @@ import { difficultyFor, FULL_DIFFICULTY } from './difficulty.js';
 import { Objectives } from './Objectives.js';
 import { Drought } from './Drought.js';
 import { Forks } from './Forks.js';
+import { Hazards } from './Hazards.js';
 import { getLang } from '../ui/i18n.js';
 import { StreamPhysics } from './StreamPhysics.js';
 import { Rules, RULES } from './Rules.js';
@@ -107,12 +108,13 @@ export class Game {
     if (this.hydro) return;
     const { terrain } = this.ctx;
     this.hydro = new Hydrology(terrain);
-    this.dropZone = computeDropZone(terrain, this.hydro);
+    this.dropZone = computeDropZone(terrain, this.hydro, this.ctx.world?.landmarks?.arch);
     this.forks = new Forks(this);
     this.forks.detect();
     this.obstacles = new Obstacles(this);
     this.obstacles.build(); // dams are biased onto the short branches…
     this.forks.classify(); // …so "CORTA · PELIGROSA" is true before it is signposted
+    this.hazards = new Hazards(this);
   }
 
   get aliveCount() {
@@ -218,6 +220,7 @@ export class Game {
 
     this.streams = streams;
     this.player = player;
+    this.hazards.place(seed);
     this.drought.reset();
     this.objectives.start(seed);
     this.cameraDirector.startMatch(player, { intro });
@@ -400,7 +403,7 @@ export class Game {
 }
 
 /** A circle over high ground where every drop must land ("land on the mountain"). */
-function computeDropZone(terrain, hydro) {
+function computeDropZone(terrain, hydro, arch) {
   const { res, H } = hydro;
   let maxH = 0;
   for (let k = 0; k < H.length; k++) if (H[k] > maxH) maxH = H[k];
@@ -431,7 +434,11 @@ function computeDropZone(terrain, hydro) {
       }
     }
   }
-  const radius = Math.max(400, Math.min(1050, coast * 0.42));
+  // Everyone must land in the same bowl, otherwise each river takes its own drainage and
+  // nobody ever meets. The zone is centred on the summit arch (where the player drops through)
+  // and kept tight on purpose.
+  const radius = Math.max(600, Math.min(900, coast * 0.38));
+  if (arch) return { x: arch.position.x, z: arch.position.z, radius };
   return { x: cx, z: cz, radius };
 }
 

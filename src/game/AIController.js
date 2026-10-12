@@ -226,6 +226,15 @@ export class AIController {
     if (this.desired && this.routeOnly <= 0) {
       target = THREE.MathUtils.clamp(signedAngle(_r.x, _r.y, this.desired.x, this.desired.y) / PHYS.steerAngle, -1, 1);
     }
+    // give the nasty ground a wide berth — otherwise only the player ever pays for it
+    const hz = game.hazards?.ahead(s, 170);
+    if (hz) {
+      const dx = hz.x - s.pos.x;
+      const dz = hz.z - s.pos.z;
+      const side = dx * s.heading.y - dz * s.heading.x; // + = hazard on our left
+      const urgency = THREE.MathUtils.clamp(1 - Math.hypot(dx, dz) / 170, 0, 1);
+      target += (side > 0 ? 1 : -1) * urgency * (0.5 + this.traits.caution * 0.6);
+    }
     target += Math.sin(this.wander * 1.3) * 0.08;
     this.steer += (target - this.steer) * Math.min(1, dt * 5);
     s.input.steer = THREE.MathUtils.clamp(this.steer, -1, 1);

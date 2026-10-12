@@ -200,13 +200,15 @@ export class Rules {
       const stagnant = s.flowSpeed < 12 ? RULES.stagnantMul : 1;
       // leading costs you: the front runner bakes in the sun, so a lead is never safe
       const lead = s.livePlace === 1 ? RULES.leaderEvap : 1;
-      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * lead * (s.evapMul || 1) * dt);
+      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * lead * (s.hazardEvap || 1) * (s.evapMul || 1) * dt);
       if (s.volume < RULES.dryLimit) {
         this.eliminate(s, null, 'dried', 'dried');
         continue;
       }
 
       game.obstacles?.check(s, dt);
+      game.hazards?.check(s, dt);
+      if (s.blinded) s.blinded = Math.max(0, s.blinded - dt * 1.6);
       if (s.leaping) continue; // airborne: rivers below can't block you
       this.channels(s, dt);
       if (!s.alive) continue;

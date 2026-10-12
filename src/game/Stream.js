@@ -106,6 +106,10 @@ export class Stream {
     this.finishedAt = -1;
     this.eliminatedAt = -1;
     this.protectedFor = 0;
+    this.hazardEvap = 1; // set by game/Hazards.js while inside a scorching / drying zone
+    this.gripMul = 1; //   …and how much of your turning you keep (ice)
+    this.blinded = 0; //   …and how fogged the player's view is (steam)
+    this.inHazard = null;
     this.danger = 0;
     this.threat = null;
     this.contact = 0;

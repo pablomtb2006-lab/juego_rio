@@ -92,7 +92,7 @@ Orden por dependencia e impacto. Cada tramo se termina, se prueba y se sube ante
 |---|---|---|
 | **A** | **Que ganar sea difícil** ✅ | LA SEQUÍA: contrarreloj que seca al último cada 17 s (bajando a 8,5 s) · IA más dura que ataca al líder · el primero evapora un 45% más |
 | **B** | **Rutas libres y bifurcaciones** ✅ | Giro de 89° que suelta el agarre del valle · cruce de collados con impulso · 4 bifurcaciones señalizadas por mapa con puertas de colores y aviso en el HUD |
-| **C** | **Peligros aleatorios** | Lava, géiseres, arenas, grietas, sol, viento, hielo, vapor… colocados al azar cada partida |
+| **C** | **Peligros aleatorios** ✅ | 260 peligros por partida (lava, géiseres, arena seca, sumideros, calor, hielo, rocas, vapor) colocados sobre las rutas reales del agua y amontonados en los ramales cortos · zona de caída centrada en el arco para que todos se crucen |
 | **D** | **Catástrofe anunciada** | Un evento por carrera con cuenta atrás y aviso: avalancha, tormenta de polvo, ola de calor, diluvio… |
 | **E** | **Habilidades ofensivas** | Muro, sanguijuela, sequía, niebla… con recarga, desbloqueadas por nivel; la IA también las usa |
 | **F** | **Crecimiento visible** | La estela y la ola crecen de verdad con los litros; hitos visuales al crecer |
@@ -107,7 +107,7 @@ Orden por dependencia e impacto. Cada tramo se termina, se prueba y se sube ante
 |---|---|
 | A — Dificultad y tormenta | **hecho** |
 | B — Rutas y bifurcaciones | **hecho** |
-| C — Peligros aleatorios | pendiente |
+| C — Peligros aleatorios | **hecho** |
 | D — Catástrofe anunciada | pendiente |
 | E — Habilidades | pendiente |
 | F — Crecimiento visible | pendiente |

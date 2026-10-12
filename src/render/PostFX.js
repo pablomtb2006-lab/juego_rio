@@ -150,7 +150,8 @@ export class PostFX {
 
     // flying through a cloud: soft whiteout (HDR, before tone mapping)
     const atmo = ctx.atmosphere;
-    const veilTarget = atmo?.cloudVeil ?? 0;
+    const blinded = ctx.game?.player?.blinded ?? 0;
+    const veilTarget = Math.max(atmo?.cloudVeil ?? 0, blinded * 0.85);
     this.veil += (veilTarget - this.veil) * (1 - Math.exp(-dt * 6));
     if (atmo?.clouds) g.get('uVeil').value.set(atmo.clouds.veilColor.r, atmo.clouds.veilColor.g, atmo.clouds.veilColor.b, this.veil * 0.78);
 

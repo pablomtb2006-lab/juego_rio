@@ -224,7 +224,7 @@ export class StreamPhysics {
     const delta = Math.atan2(hx * tz - hz * tx, hx * tx + hz * tz);
     const size01 = THREE.MathUtils.clamp((vf + 0.5) / 2.5, 0, 1);
     let turnMax = PHYS.turnMaxSmall + (PHYS.turnMaxBig - PHYS.turnMaxSmall) * size01;
-    turnMax = Math.min(turnMax, PHYS.latAccelMax / Math.max(sp, 1));
+    turnMax = Math.min(turnMax, PHYS.latAccelMax / Math.max(sp, 1)) * (s.gripMul ?? 1);
     // steering hard releases the valley's grip, so the player really picks the line
     const free = 1 - PHYS.steerFree * Math.abs(steer);
     const wf = THREE.MathUtils.clamp(PHYS.followGain * free * delta, -turnMax, turnMax);
