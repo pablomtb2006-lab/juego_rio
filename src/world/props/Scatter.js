@@ -19,16 +19,16 @@ import { mulberry32, createNoise2D, fbm } from '../../core/random.js';
 
 const C = (hex) => new THREE.Color(hex);
 export const PALETTE = {
-  pine: [C(0x2f6a3c), C(0x2a6040), C(0x357340), C(0x26583a), C(0x2f6448)],
-  broad: [C(0x4f9a2e), C(0x5dab35), C(0x438f2c), C(0x69b03a), C(0x58a046)],
+  pine: [C(0x174d32), C(0x1d5a38), C(0x14452e), C(0x216340), C(0x1a5235)],
+  broad: [C(0x6eaa24), C(0x7cb82c), C(0x5f9a20), C(0x8ac22f), C(0x6aa62a)],
   autumn: [C(0xc8432b), C(0xe0762f), C(0xd5582a), C(0xe39a33), C(0xb93a29), C(0xe6862f)],
-  birch: [C(0x9fc03c), C(0xb3c845), C(0x8db43a)],
+  birch: [C(0x9bcb32), C(0xa8d63c), C(0x8fbe2d)],
   birchAutumn: [C(0xe2b43a), C(0xebc54a), C(0xd9a032)],
-  bush: [C(0x4a8f2e), C(0x3e802c), C(0x58993a)],
+  bush: [C(0x3f7a28), C(0x4a8b2d), C(0x346b26)],
   bushAutumn: [C(0xb8402a), C(0xd0602c), C(0xc44a2a), C(0xd88a30)],
-  rock: [C(0x8e8174), C(0x958778), C(0x85796d), C(0x9a8c7c)],
-  rockHigh: [C(0x7a7068), C(0x80766c), C(0x726a63)],
-  rockCoast: [C(0xd07a4a), C(0xc96d42), C(0xd88a58), C(0xbf6a45)],
+  rock: [C(0x648c99), C(0x6d94a0), C(0x5a8290), C(0x729aa6)],
+  rockHigh: [C(0x344f61), C(0x3d5a6d), C(0x2e4857)],
+  rockCoast: [C(0xbe8a63), C(0xb37f58), C(0xc79670), C(0xa9754f)],
 };
 
 const _m = new THREE.Matrix4();
@@ -189,7 +189,7 @@ export function scatterProps(terrain, { density = 1, seed = 7, treeNames, rockNa
       const veg = hRel < 0.62 && ny > 0.66 && hc > 2.5;
       const forest = veg ? sstep(0.06, 0.3, fbm(nForest, xc / 1100, zc / 1100, 3) + 0.14 + valley * 0.62 + low * 0.12) : 0;
       const clear = veg ? sstep(0.38, 0.62, nClear(xc / 260, zc / 260)) : 0;
-      const autumn = veg ? sstep(0.1, 0.42, fbm(nAutumn, xc / 650, zc / 650, 2)) : 0;
+      const autumn = veg ? sstep(0.3, 0.62, fbm(nAutumn, xc / 650, zc / 650, 2)) * 0.55 : 0;
 
       // --- trees -------------------------------------------------------------
       const dTree = (maxTrees * forest * (1 - 0.7 * clear) + 0.05 * density) * alt * slopeOK * coastOK * (1 - 0.5 * chan);
@@ -220,7 +220,7 @@ export function scatterProps(terrain, { density = 1, seed = 7, treeNames, rockNa
       // --- bushes --------------------------------------------------------------
       if (bushes.length) {
         const edge = forest * (1 - forest) * 4;
-        const dBush = (0.75 * edge + 0.35 * forest * (1 - clear) + 0.06) * density * (1 - sstep(0.46, 0.62, hRel)) * sstep(0.66, 0.82, ny) * sstep(2.5, 6, hc) * (1 - 0.8 * chan);
+        const dBush = (0.75 * edge + 0.35 * forest * (1 - clear) + 0.06 + 0.5 * (1 - sstep(0.62, 0.8, ny))) * density * (1 - sstep(0.46, 0.62, hRel)) * sstep(0.5, 0.72, ny) * sstep(2.5, 6, hc) * (1 - 0.8 * chan);
         const nB = Math.floor(dBush + rand());
         for (let t = 0; t < nB; t++) {
           const x = x0 + rand() * STEP;

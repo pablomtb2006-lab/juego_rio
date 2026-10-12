@@ -21,8 +21,8 @@ export const PROP_UNIFORMS = {
   uSunDirP: { value: new THREE.Vector3(0.45, 0.55, 0.35).normalize() },
   uSunColorP: { value: new THREE.Color(1, 0.92, 0.8) },
   uSkyColorP: { value: new THREE.Color(0.45, 0.65, 1) },
-  uMossColor: { value: new THREE.Color(0x7fa63a) },
-  uMossColor2: { value: new THREE.Color(0xa9ab4a) },
+  uMossColor: { value: new THREE.Color(0x6eaa24) },
+  uMossColor2: { value: new THREE.Color(0x9bcb32) },
   uSnowLine: { value: 1e5 },
   uGrassFar: { value: 60 },
   uThin: { value: new THREE.Vector2(2500, 7000) }, // far thinning start / end distance

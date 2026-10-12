@@ -4,7 +4,7 @@
 // Renderer fields (stable contract): id, deep, shallow, foam, glow.
 // Shop-only fields: name (es), nameEn, rarity, price, featured.
 export const SKINS = [
-  { id: 'clear', name: 'Cristalina', nameEn: 'Crystal Clear', price: 0, rarity: 'common', deep: 0x0b6e8a, shallow: 0x35d0d6, foam: 0xffffff, glow: 0x000000 },
+  { id: 'clear', name: 'Cristalina', nameEn: 'Crystal Clear', price: 0, rarity: 'common', deep: 0x087ead, shallow: 0x18c9d0, foam: 0xffffff, glow: 0x000000 },
   { id: 'tropical', name: 'Tropical', nameEn: 'Tropical', price: 500, rarity: 'rare', deep: 0x007a78, shallow: 0x3cf2c8, foam: 0xf4fffb, glow: 0x000000 },
   { id: 'sakura', name: 'Sakura', nameEn: 'Sakura', price: 700, rarity: 'rare', deep: 0x9c2a6b, shallow: 0xff9ccf, foam: 0xfff0f7, glow: 0x2a0018 },
   { id: 'glacier', name: 'Glaciar', nameEn: 'Glacier', price: 900, rarity: 'rare', deep: 0x2d5f9e, shallow: 0xa8e4ff, foam: 0xffffff, glow: 0x0a1a30 },

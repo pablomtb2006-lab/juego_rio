@@ -54,13 +54,13 @@ export const KEYS = [
   {
     t: 0.5, // "noon" — the gameplay look: warm sun at ~42°, deep blue zenith
     elev: 42, az: 225,
-    sun: 0xffe9c9, sunI: 3.3,
-    zenith: 0x2a7ae6, horizon: 0xb2dcff, fog: 0x9ccaf2, glow: 0xfff0d8, glowI: 0.45,
-    density: 0.00006, falloff: 700, aerial: 0.000006,
-    skyAmb: 0xa8cff5, groundAmb: 0x7a7550, hemiI: 0.55, env: 1.45,
+    sun: 0xffeace, sunI: 3.45,
+    zenith: 0x2a7ae6, horizon: 0xbfe6ff, fog: 0x7fd0db, glow: 0xfff0d8, glowI: 0.45,
+    density: 0.00007, falloff: 640, aerial: 0.0000072,
+    skyAmb: 0xbcd9e8, groundAmb: 0x5e7a36, hemiI: 0.58, env: 1.5,
     cloudLit: 0xffffff, cloudShade: 0xa9b8dc,
-    exposure: 1.0,
-    grade: { warm: 0.3, cool: 0.45, sat: 1.12, contrast: 1.07 },
+    exposure: 0.98,
+    grade: { warm: 0.4, cool: 0.38, sat: 1.18, contrast: 1.08 },
   },
   {
     t: 0.64, // late afternoon (menu mood)

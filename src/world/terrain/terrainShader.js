@@ -112,28 +112,28 @@ uniform vec4 uTerrain;
 varying vec3 vTPos;
 ${DETAIL_GLSL}
 
-const vec3 C_GRASS_COOL = ${lin(0x5dbb3a)};
-const vec3 C_GRASS_WARM = ${lin(0x8ccb3f)};
-const vec3 C_GRASS_LUSH = ${lin(0x3f9e33)};
-const vec3 C_GRASS_DRY = ${lin(0xb9b45a)};
-const vec3 C_ALPINE = ${lin(0x9fae55)};
-const vec3 C_FOREST = ${lin(0x2f6a2f)};
-const vec3 C_LITTER = ${lin(0x6b5a3a)};
-const vec3 C_DIRT = ${lin(0x9a7f5c)};
-const vec3 C_PEBBLE = ${lin(0xb3a68e)};
-const vec3 C_ROCK = ${lin(0x8e8174)};
-const vec3 C_ROCK_DARK = ${lin(0x5f554d)};
-const vec3 C_ROCK_LIGHT = ${lin(0xb3a594)};
-const vec3 C_ROCK_COAST = ${lin(0xd07a4a)};
-const vec3 C_ROCK_COAST_DK = ${lin(0x9c4e2c)};
+const vec3 C_GRASS_COOL = ${lin(0x6eaa24)};
+const vec3 C_GRASS_WARM = ${lin(0x9bcb32)};
+const vec3 C_GRASS_LUSH = ${lin(0x2f7d33)};
+const vec3 C_GRASS_DRY = ${lin(0xc2c266)};
+const vec3 C_ALPINE = ${lin(0x8fa840)};
+const vec3 C_FOREST = ${lin(0x174d32)};
+const vec3 C_LITTER = ${lin(0x3e5235)};
+const vec3 C_DIRT = ${lin(0x8a7f62)};
+const vec3 C_PEBBLE = ${lin(0xa9b3ae)};
+const vec3 C_ROCK = ${lin(0x7d929b)};
+const vec3 C_ROCK_DARK = ${lin(0x5b707c)};
+const vec3 C_ROCK_LIGHT = ${lin(0xaebfc5)};
+const vec3 C_ROCK_COAST = ${lin(0xbe8a63)};
+const vec3 C_ROCK_COAST_DK = ${lin(0x7a5440)};
 const vec3 C_SNOW = ${lin(0xf4f8ff)};
-const vec3 C_SNOW_SHADE = ${lin(0xc9daf2)};
-const vec3 C_SAND = ${lin(0xe8d3a0)};
-const vec3 C_SAND_WET = ${lin(0xb39a6c)};
-const vec3 C_SEABED_SHALLOW = ${lin(0xd9cb98)};
-const vec3 C_SEABED_MID = ${lin(0x4fa79b)};
-const vec3 C_SEABED_DEEP = ${lin(0x1c5a6e)};
-const vec3 C_LAKEBED = ${lin(0x7d7d55)};
+const vec3 C_SNOW_SHADE = ${lin(0xb8d2e4)};
+const vec3 C_SAND = ${lin(0xf1e6b1)};
+const vec3 C_SAND_WET = ${lin(0xc7b588)};
+const vec3 C_SEABED_SHALLOW = ${lin(0xe8dca8)};
+const vec3 C_SEABED_MID = ${lin(0x18c9d0)};
+const vec3 C_SEABED_DEEP = ${lin(0x087ead)};
+const vec3 C_LAKEBED = ${lin(0x6e7a58)};
 const vec3 C_FLOWER_A = ${lin(0xffe36e)};
 const vec3 C_FLOWER_B = ${lin(0xffffff)};
 
@@ -227,13 +227,13 @@ vec3 rockN2 = triNormal(tRock, P, rockN1, 1.0 / 7.0, 0.7 * near, rs2);
 rockN1 = normalize(mix(rockN1, rockN2, near));
 #endif
 float strata = sin((h + (nS.g - 0.5) * 40.0) * 0.55) * 0.5 + 0.5;
-vec3 rock = mix(C_ROCK_DARK, C_ROCK_LIGHT, clamp(rs.a * 0.9 + strata * 0.25 + (nL.a - 0.5) * 0.4, 0.0, 1.0));
-rock = mix(rock, C_ROCK, 0.35);
+vec3 rock = mix(C_ROCK_DARK, C_ROCK_LIGHT, clamp(rs.a * 0.95 + strata * 0.3 + (nL.a - 0.5) * 0.42, 0.0, 1.0));
+rock = mix(rock, C_ROCK, 0.32); // grey-blue faces, cooler clefts — stone, not denim
 vec3 coastRock = mix(C_ROCK_COAST_DK, C_ROCK_COAST, clamp(rs.a * 1.1 + strata * 0.2, 0.0, 1.0));
 float orange = smoothstep(0.45, 0.8, coast + (nL.r - 0.5) * 0.25) * (1.0 - smoothstep(180.0, 320.0, h));
 rock = mix(rock, coastRock, orange);
 float cav = mix(rs.b, rs2.b, near * 0.5);
-rock *= 0.55 + 0.45 * cav;
+rock *= 0.52 + 0.48 * cav;
 // sunlit tops of facets slightly brighter (edge wear)
 rock *= 1.0 + 0.12 * clamp(dot(rockN1, vec3(0.0, 1.0, 0.0)) - tNg.y, 0.0, 1.0);
 col = mix(col, rock, rockAmt);
