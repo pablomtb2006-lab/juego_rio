@@ -60,7 +60,7 @@ export class Result {
     this.r.title.textContent = win ? t(`res.${kind}`) : t('res.eliminated');
     if (!win) {
       const by = info.by;
-      const label = info.reason === 'dried' || !by ? t('res.dried') : info.reason === 'swallowed' ? t('res.swallowedBy') : t('res.cutBy');
+      const label = info.reason === 'drought' ? t('res.drought') : info.reason === 'dried' || !by ? t('res.dried') : info.reason === 'swallowed' ? t('res.swallowedBy') : t('res.cutBy');
       this.r.by.innerHTML = `${esc(label)}${by && info.reason !== 'dried' ? ` <span class="who" style="--c:${hex(by.color)}">${esc(by.name)}</span>` : ''}`;
     } else this.r.by.innerHTML = '';
     const p = info.player;

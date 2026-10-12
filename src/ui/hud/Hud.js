@@ -27,6 +27,10 @@ export class Hud {
         </div>
         <div class="goals" data-ref="goals"></div>
       </div>
+      <div class="drought" data-ref="drought">
+        <div class="drought__bar"><i data-ref="droughtFill"></i></div>
+        <div class="drought__row"><b data-ref="droughtTime">0</b><span data-ref="droughtWho"></span></div>
+      </div>
       <div class="feed" data-ref="feed"></div>
       <div class="alt" data-ref="alt">
         <small data-i18n="hud.altitude"></small>
@@ -131,6 +135,24 @@ export class Hud {
     if (this.ui.ctx.params.capture) el.classList.add('is-in');
   }
 
+  /** The drought countdown (game/Drought.js): who gets swept next, and in how long. */
+  renderDrought() {
+    const d = this.ui.ctx.game.drought;
+    const r = this.r;
+    const on = !!d?.active;
+    r.drought.classList.toggle('is-on', on);
+    if (!on) return;
+    const left = Math.max(0, d.timeLeft);
+    const me = d.playerAtRisk;
+    r.drought.classList.toggle('is-me', me);
+    r.drought.classList.toggle('is-soon', left < 5);
+    const secs = left < 10 ? left.toFixed(1) : String(Math.ceil(left));
+    if (r.droughtTime.textContent !== secs) r.droughtTime.textContent = secs;
+    const who = me ? t('hud.droughtYou') : d.victim ? d.victim.name : '';
+    if (r.droughtWho.textContent !== who) r.droughtWho.textContent = who;
+    r.droughtFill.style.width = `${Math.min(100, (left / Math.max(d.interval, 1)) * 100)}%`;
+  }
+
   /** Match objectives (game/Objectives.js): rebuilt only when something changes. */
   renderGoals() {
     const list = this.ui.ctx.game.objectives?.list ?? [];
@@ -154,6 +176,7 @@ export class Hud {
     const r = this.r;
 
     this.renderGoals();
+    this.renderDrought();
 
     // --- distance & litres (top centre, like the trailer) ---
     let dist = p.phase === 'drop' ? terrain.distToSea(p.pos.x, p.pos.z) : p.distToSea;

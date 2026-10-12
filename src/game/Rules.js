@@ -43,6 +43,7 @@ export const RULES = {
   bumpSpeed: 9, // m/s: a bigger head catching you slower than this only shoulders you aside
   swallowGain: 0.5,
   protectTime: 8,
+  leaderEvap: 1.45, // the stream in first place evaporates faster: no coasting to the sea
   archBonus: 220000,
   dangerLook: 2.6, // seconds of travel scanned ahead for bigger rivers
   liveLength: 380, // metres of channel behind a head that block / can be cut at full strength
@@ -197,7 +198,9 @@ export class Rules {
 
       // evaporation: the drought tightens as the match goes on; still water dries fastest
       const stagnant = s.flowSpeed < 12 ? RULES.stagnantMul : 1;
-      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * (s.evapMul || 1) * dt);
+      // leading costs you: the front runner bakes in the sun, so a lead is never safe
+      const lead = s.livePlace === 1 ? RULES.leaderEvap : 1;
+      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * lead * (s.evapMul || 1) * dt);
       if (s.volume < RULES.dryLimit) {
         this.eliminate(s, null, 'dried', 'dried');
         continue;

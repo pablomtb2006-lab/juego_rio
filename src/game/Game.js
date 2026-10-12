@@ -4,6 +4,7 @@ import { Obstacles } from './Obstacles.js';
 import { applyUpgrades } from './upgrades.js';
 import { difficultyFor, FULL_DIFFICULTY } from './difficulty.js';
 import { Objectives } from './Objectives.js';
+import { Drought } from './Drought.js';
 import { getLang } from '../ui/i18n.js';
 import { StreamPhysics } from './StreamPhysics.js';
 import { Rules, RULES } from './Rules.js';
@@ -53,6 +54,7 @@ export class Game {
     this.rules = new Rules(this);
     this.cameraDirector = new CameraDirector(this);
     this.objectives = new Objectives(this);
+    this.drought = new Drought(this);
     this._tags = new Map();
 
     const bus = ctx.bus;
@@ -212,6 +214,7 @@ export class Game {
 
     this.streams = streams;
     this.player = player;
+    this.drought.reset();
     this.objectives.start(seed);
     this.cameraDirector.startMatch(player, { intro });
     this.setState('drop');
@@ -289,6 +292,7 @@ export class Game {
       this.physics.update(sdt, s);
     }
     this.rules.update(sdt);
+    this.drought.update(sdt);
 
     if (this.pendingEnd) {
       this.pendingEnd.t -= dt;

@@ -16,11 +16,11 @@ const _p = new THREE.Vector2();
  *   balanced  a bit of everything
  */
 export const TRAITS = {
-  balanced: { greed: 1.0, caution: 0.75, aggression: 0.35, shortcut: 0.55, surge: 0.45, cloud: 0.8, react: 0.3 },
-  greedy: { greed: 1.9, caution: 0.55, aggression: 0.15, shortcut: 0.2, surge: 0.25, cloud: 1.3, react: 0.34 },
-  sprinter: { greed: 0.35, caution: 0.6, aggression: 0.1, shortcut: 1.0, surge: 1.0, cloud: 0.35, react: 0.28 },
-  bully: { greed: 0.8, caution: 0.4, aggression: 1.0, shortcut: 0.3, surge: 0.6, cloud: 0.8, react: 0.3 },
-  cautious: { greed: 0.8, caution: 1.0, aggression: 0.0, shortcut: 0.45, surge: 0.3, cloud: 0.8, react: 0.26 },
+  balanced: { greed: 1.1, caution: 0.75, aggression: 0.6, shortcut: 0.7, surge: 0.6, cloud: 0.9, react: 0.26 },
+  greedy: { greed: 2.0, caution: 0.55, aggression: 0.3, shortcut: 0.3, surge: 0.4, cloud: 1.4, react: 0.3 },
+  sprinter: { greed: 0.4, caution: 0.6, aggression: 0.25, shortcut: 1.0, surge: 1.0, cloud: 0.4, react: 0.24 },
+  bully: { greed: 0.8, caution: 0.35, aggression: 1.0, shortcut: 0.4, surge: 0.8, cloud: 0.85, react: 0.26 },
+  cautious: { greed: 0.9, caution: 1.0, aggression: 0.15, shortcut: 0.5, surge: 0.45, cloud: 0.9, react: 0.24 },
 };
 
 /** Litres a body is worth to whoever swallows it (mirrors Rules.absorb). */
@@ -44,7 +44,7 @@ export class AIController {
       base.caution = Math.min(1.4, base.caution * D.caution);
     }
     this.traits = base;
-    this.skill = (opts.skill ?? 0.96 + rand() * 0.07) * (D ? D.aiSkill : 1);
+    this.skill = (opts.skill ?? 0.98 + rand() * 0.07) * (D ? D.aiSkill : 1);
     this.rubberBand = opts.rubberBand ?? !stream.isPlayer;
     this.wander = rand() * 100;
     this.planT = rand() * 0.3;
@@ -276,7 +276,7 @@ export class AIController {
       }
     }
     // 2. hunt a smaller river
-    if (T.aggression > 0.3 && s.volume > 250000 && game.time - s.landedAt > 20) {
+    if (T.aggression > 0.25 && s.volume > 230000 && game.time - s.landedAt > 18) {
       const hunt = this.huntDir(game);
       if (hunt) {
         this.desired = hunt;
@@ -429,13 +429,18 @@ export class AIController {
   huntDir(game) {
     const s = this.stream;
     let best = null;
-    let bestD = 380;
+    let bestScore = -Infinity;
+    let bestD = 0;
     for (const o of game.streams) {
       if (o === s || o.phase !== 'flow' || o.protectedFor > 0) continue;
       if (o.isPlayer && this.difficulty && !this.difficulty.huntPlayer) continue;
       if (o.volume * 1.6 > s.volume) continue;
       const d = Math.hypot(o.pos.x - s.pos.x, o.pos.z - s.pos.z);
-      if (d < bestD) {
+      if (d > 420) continue;
+      // the leader wears a target: everyone would rather take down whoever is winning
+      const score = -d + (o.livePlace === 1 ? 180 : o.livePlace <= 3 ? 80 : 0);
+      if (score > bestScore) {
+        bestScore = score;
         bestD = d;
         best = o;
       }
@@ -487,7 +492,7 @@ export class AIController {
     if (p && p !== s && p.phase === 'flow' && isFinite(p.routeDist) && isFinite(s.routeDist)) {
       const diff = s.routeDist - p.routeDist; // + = bot behind the player
       // ahead: ease off progressively; behind: only catch up from far back (no surprise rams)
-      const k = diff < 0 ? Math.max(diff / 2200, -0.13) : diff < 400 ? 0 : Math.min((diff - 400) / 1500, 1) * 0.08;
+      const k = diff < 0 ? Math.max(diff / 4000, -0.06) : diff < 300 ? 0 : Math.min((diff - 300) / 1400, 1) * 0.12;
       target *= 1 + k;
     }
     s.speedMul += (target - s.speedMul) * Math.min(1, dt * 0.5);

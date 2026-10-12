@@ -168,6 +168,14 @@ export class UI {
       if (stream !== p && place === 1 && p?.alive) this.callouts.show(t('co.firstAtSea', { name: stream.name }), { priority: 2, hold: 2.4 });
       this.checkAlive();
     });
+    bus.on('droughtStart', () => this.callouts.show(t('co.droughtGo'), { priority: 3, hold: 2.6 }));
+    bus.on('droughtWarn', ({ victim }) => {
+      if (victim !== this.ctx.game.player) return;
+      this.callouts.show(t('co.droughtYou'), { priority: 4, hold: 2.2 });
+      this.sfx('error');
+      vibrate(this.ctx, [60, 40, 60]);
+    });
+    bus.on('droughtSweep', () => this.checkAlive());
     bus.on('objective', ({ objective }) => {
       this.callouts.float(`${objective.icon} ${objective.text}`, { kind: 'gold' });
       this.toast(`${t('hud.goalDone')} +${objective.reward}`, 'gold');
