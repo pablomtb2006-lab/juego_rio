@@ -4,6 +4,7 @@
 //   node tools/capture.mjs --scenes=stream,lake    # subset
 //   node tools/capture.mjs --size=portrait --quality=ultra --out=captures/round2
 //   node tools/capture.mjs --frames=3              # extra rendered frames before the shot
+//   node tools/capture.mjs --nohud                 # hide the DOM overlay (pure 3D comparison)
 //
 // Uses headless Chromium with SwiftShader (software WebGL2): slow but pixel-identical
 // in look to a GPU render. Writes <out>/<scene>-<size>.png and <out>/console.log.
@@ -48,7 +49,8 @@ for (const sizeName of sizeList) {
     page.on('pageerror', (e) => log.write(`[${scene}/${sizeName}] PAGEERROR: ${e.stack ?? e}\n`));
     const t0 = Date.now();
     try {
-      await page.goto(`${url}?capture=1&mute=1&scene=${scene}&quality=${quality}`, { waitUntil: 'load' });
+      const extra = args.nohud ? '&nohud=1' : '';
+      await page.goto(`${url}?capture=1&mute=1&scene=${scene}&quality=${quality}${extra}`, { waitUntil: 'load' });
       await page.waitForFunction(() => window.__READY || window.__BOOT_ERROR, null, { timeout, polling: 250 });
       const err = await page.evaluate(() => window.__BOOT_ERROR);
       if (err) throw new Error(err);
