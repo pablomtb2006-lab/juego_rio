@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Río Vivo — pruebas de validación</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #0d1117; color: #c9d1d9; font: 13px/1.5 ui-monospace, monospace; }
+      button { margin: 0 6px 6px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Río Vivo — pruebas de validación</h1>
+    <div id="btns"></div>
+    <pre id="log"></pre>
+    <script type="module">
+      import { TESTS, sweep } from '../../src/fluid/FluidValidationTests.js';
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 1;
+      const gl = canvas.getContext('webgl2', { antialias: false, depth: false });
+      const log = document.getElementById('log');
+      async function run(name, opts) {
+        const t0 = performance.now();
+        const r = name === 'timestep' || name === 'resolution' ? await sweep(gl, name) : await TESTS[name](gl, opts);
+        r.wallSeconds = (performance.now() - t0) / 1000;
+        log.textContent += `${name}: ${r.pass ? 'PASA' : 'FALLA'}\n${JSON.stringify(r.metrics, null, 1)}\n\n`;
+        return r;
+      }
+      for (const name of [...Object.keys(TESTS), 'timestep', 'resolution']) {
+        const b = document.createElement('button');
+        b.textContent = name;
+        b.onclick = () => run(name);
+        document.getElementById('btns').appendChild(b);
+      }
+      window.__fluid = { run };
+      window.__READY = true;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,448 @@
+{
+ "freefall": {
+  "pass": true,
+  "metrics": {
+   "y0": 4.19999910145998,
+   "t": 0.6,
+   "dt": 0.005555555555555556,
+   "com": [
+    0.00000394813105231151,
+    2.41784589830786,
+    -0.0000011610045476118103
+   ],
+   "yExpected": 2.43419910145998,
+   "fallError": 0.009261073254117158,
+   "yDiscrete": 2.4178491014599803,
+   "discreteError": 0.0000017973527034394068,
+   "integratorTerm": 0.01635,
+   "comVel": [
+    -5.5198597692651674e-8,
+    -5.886010190472007,
+    -5.899053689972789e-7
+   ],
+   "vExpected": -5.886,
+   "velError": 0.0000017313068308999317,
+   "lateralDrift": 2.7874109629244567e-7,
+   "massRelError": 0,
+   "lostParticles": 0,
+   "insideSolids": 0,
+   "outsideDomain": 0,
+   "speedClamps": 0
+  },
+  "criteria": "centre of mass within 0.1% of the exact discrete free fall, velocity within 0.1% of −gt, lateral drift < 1 mm (internal forces are pairwise: they cannot move the centre of mass)",
+  "wallSeconds": 2.1065,
+  "date": "2026-10-13T16:22:57.646Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "rest": {
+  "pass": true,
+  "metrics": {
+   "particles": 2400,
+   "seconds": 5,
+   "surfaceHeight": 0.6032914757728577,
+   "expectedSurface": 0.5941916771880539,
+   "pressureSlopeRaw": 10593.912290660259,
+   "kappaYY": 0.9132216695767404,
+   "pressureSlope": 9674.590269426313,
+   "expectedSlope": 9792.342,
+   "expectedSurfaceGeometric": 0.6000000000000001,
+   "pressureSlopeError": 0.01202487929585051,
+   "pressureSamples": 585,
+   "kineticPeak": 1.5091440193126635,
+   "kineticEnd": 0.029555975690945896,
+   "speedMaxEnd": 0.0793634837629796,
+   "speedMeanEnd": 0.01129180957388311,
+   "densityErrorMean": 0.0033106701488541702,
+   "densityErrorMax": 0.015904005628099238,
+   "keSeries": [
+    [
+     0.02,
+     0.4148752031653017
+    ],
+    [
+     0.25,
+     1.5091440193126635
+    ],
+    [
+     0.5,
+     0.6967991804195889
+    ],
+    [
+     0.75,
+     0.38197004413923247
+    ],
+    [
+     1,
+     0.2419720484239465
+    ],
+    [
+     1.25,
+     0.14752385495894058
+    ],
+    [
+     1.5,
+     0.11024082797405611
+    ],
+    [
+     1.75,
+     0.08922687976344555
+    ],
+    [
+     2,
+     0.08068740027821017
+    ],
+    [
+     2.25,
+     0.07224995527854175
+    ],
+    [
+     2.5,
+     0.060122949175533964
+    ],
+    [
+     2.75,
+     0.04922658659446421
+    ],
+    [
+     3,
+     0.055395222561515835
+    ],
+    [
+     3.25,
+     0.04209919828666917
+    ],
+    [
+     3.5,
+     0.03809837247037041
+    ],
+    [
+     3.75,
+     0.03834721489373379
+    ],
+    [
+     4,
+     0.034811723441366696
+    ],
+    [
+     4.25,
+     0.03571547316119489
+    ],
+    [
+     4.5,
+     0.03341194675980354
+    ],
+    [
+     4.75,
+     0.027364993252889967
+    ],
+    [
+     5,
+     0.029555975690945896
+    ]
+   ],
+   "massRelError": 0,
+   "lostParticles": 0,
+   "insideSolids": 0,
+   "outsideDomain": 0,
+   "speedClamps": 0
+  },
+  "criteria": "mass exact, nothing inside solids; |dp/dz − ρg|/ρg < 10%; mean speed < 2 cm/s; KE_end < 2% of KE_peak",
+  "wallSeconds": 50.58570000000019,
+  "date": "2026-10-13T16:23:48.239Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "flow": {
+  "pass": true,
+  "metrics": {
+   "designFlow": 0.08556360151507976,
+   "massIn": 341.6383481294105,
+   "massOut": 162.34148172223468,
+   "massDomain": 445.01558161893945,
+   "massInitial": 265.7187152117637,
+   "balance": -5.684341886080802e-14,
+   "starvedLayers": 0,
+   "series": [
+    [
+     0.02,
+     4200,
+     0,
+     0,
+     0
+    ],
+    [
+     0.25,
+     4524,
+     20,
+     0,
+     0
+    ],
+    [
+     0.5,
+     4875,
+     43,
+     0,
+     0
+    ],
+    [
+     0.75,
+     5199,
+     63,
+     0,
+     0
+    ],
+    [
+     1,
+     5550,
+     85,
+     0,
+     0
+    ],
+    [
+     1.25,
+     5874,
+     106,
+     0,
+     0
+    ],
+    [
+     1.5,
+     6225,
+     128,
+     0,
+     0
+    ],
+    [
+     1.75,
+     6376,
+     149,
+     11,
+     0
+    ],
+    [
+     2,
+     6492,
+     171,
+     26,
+     0
+    ],
+    [
+     2.25,
+     6537,
+     191,
+     43,
+     0
+    ],
+    [
+     2.5,
+     6597,
+     214,
+     62,
+     0
+    ],
+    [
+     2.75,
+     6653,
+     234,
+     79,
+     0
+    ],
+    [
+     3,
+     6738,
+     256,
+     96,
+     0
+    ],
+    [
+     3.25,
+     6809,
+     277,
+     112,
+     0
+    ],
+    [
+     3.5,
+     6907,
+     299,
+     128,
+     0
+    ],
+    [
+     3.75,
+     6959,
+     319,
+     145,
+     0
+    ],
+    [
+     4,
+     7034,
+     342,
+     162,
+     0
+    ]
+   ],
+   "massRelError": 0,
+   "lostParticles": 0,
+   "insideSolids": 0,
+   "outsideDomain": 0,
+   "speedClamps": 0
+  },
+  "criteria": "M_domain = M_initial + M_in − M_out exactly (relative error < 1e-9), water reaches the sink, nothing inside solids",
+  "wallSeconds": 91.39070000000018,
+  "date": "2026-10-13T16:25:19.635Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "control": {
+  "pass": true,
+  "metrics": {
+   "comStart": [
+    0.7999963955332835,
+    0.24999880907449146,
+    0.5000020204939776
+   ],
+   "comAfterPush": [
+    3.4575951183007825,
+    0.03979658355561292,
+    0.5012489965787003
+   ],
+   "comAfterRelease": [
+    4.6216129086911675,
+    0.062063449147778255,
+    0.5007997235645436
+   ],
+   "moved": 2.657598722767499,
+   "workBooked": 3689.522763695301,
+   "keAfterPush": 1966.0440355545318,
+   "keAfterRelease": 74.20787351881135,
+   "massRelError": 0,
+   "lostParticles": 0,
+   "insideSolids": 0,
+   "outsideDomain": 0,
+   "speedClamps": 0
+  },
+  "criteria": "the force moves the water (> 0.2 m), mass is untouched, the work done is booked as external energy (> 0)",
+  "wallSeconds": 27.073,
+  "date": "2026-10-13T16:25:46.712Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "dambreak": {
+  "pass": true,
+  "metrics": {
+   "particles": 4000,
+   "spacing": 0.03,
+   "substeps": 3,
+   "H0": 0.3,
+   "reservoir": 2.4,
+   "c0": 1.7155174146594956,
+   "window": [
+    0.38472357923046796,
+    1.6
+   ],
+   "gateDepthMean": 0.14506624464805315,
+   "gateDepthRitter": 0.13333333333333333,
+   "gateRatio": 1.0879968348603986,
+   "frontSpeed": 2.5346790827237697,
+   "frontSpeedRitter": 3.431034829318991,
+   "frontRatio": 0.7387506128076424,
+   "massRelError": 0,
+   "lostParticles": 0,
+   "insideSolids": 0,
+   "outsideDomain": 0,
+   "speedClamps": 0
+  },
+  "criteria": "mass exact; gate depth within 15% of 4/9·H0 in the shallow-water window; front speed between 0.5 and 1.05 × 2√(gH0)",
+  "wallSeconds": 18.6675,
+  "date": "2026-10-13T16:26:05.385Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "timestep": {
+  "pass": true,
+  "metrics": {
+   "runs": [
+    {
+     "substeps": 2,
+     "gateRatio": 1.067248757470113,
+     "frontRatio": 0.7302586583953329,
+     "massRelError": 0,
+     "lost": 0,
+     "pass": true
+    },
+    {
+     "substeps": 3,
+     "gateRatio": 1.0879968348603986,
+     "frontRatio": 0.7387506128076424,
+     "massRelError": 0,
+     "lost": 0,
+     "pass": true
+    },
+    {
+     "substeps": 5,
+     "gateRatio": 1.1215114319553745,
+     "frontRatio": 0.7375940476755151,
+     "massRelError": 0,
+     "lost": 0,
+     "pass": true
+    }
+   ],
+   "gateSpread": 0.04967961379170653,
+   "frontSpread": 0.011545284564276273,
+   "gateErrorVsRitter": [
+    0.06724875747011305,
+    0.08799683486039855,
+    0.1215114319553745
+   ],
+   "convergesTowardsRitter": false
+  },
+  "criteria": "no losses in any run; gate depth and front speed vary < 10% across the sweep",
+  "wallSeconds": 62.78960000000056,
+  "date": "2026-10-13T16:27:08.179Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "resolution": {
+  "pass": false,
+  "metrics": {
+   "runs": [
+    {
+     "spacing": 0.04,
+     "capacity": 2048,
+     "gateRatio": 1.1642046915223965,
+     "frontRatio": 0.6874357270433253,
+     "massRelError": 0,
+     "lost": 0,
+     "pass": false
+    },
+    {
+     "spacing": 0.03,
+     "capacity": 4096,
+     "gateRatio": 1.0879968348603986,
+     "frontRatio": 0.7387506128076424,
+     "massRelError": 0,
+     "lost": 0,
+     "pass": true
+    },
+    {
+     "spacing": 0.024,
+     "capacity": 8192,
+     "gateRatio": 0.9771761236626368,
+     "frontRatio": 0.735823831310776,
+     "massRelError": 0,
+     "lost": 0,
+     "pass": true
+    }
+   ],
+   "gateSpread": 0.17374422083195667,
+   "frontSpread": 0.0712044093715942,
+   "gateErrorVsRitter": [
+    0.16420469152239647,
+    0.08799683486039855,
+    0.022823876337363158
+   ],
+   "convergesTowardsRitter": true
+  },
+  "criteria": "no losses in any run; gate depth and front speed vary < 10% across the sweep",
+  "wallSeconds": 66.66590000000038,
+  "date": "2026-10-13T16:28:14.848Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ }
+}

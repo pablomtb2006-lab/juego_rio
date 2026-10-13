@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Río Vivo — laboratorio de agua</title>
+    <style>
+      :root { --bg: rgba(10, 16, 24, 0.78); --line: rgba(255, 255, 255, 0.1); --fg: #dfe8ef; --dim: #8fa3b3; --ok: #6be38f; --bad: #ff7a6b; --acc: #49c6ff; }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1016; color: var(--fg); font: 12px/1.45 Inter, system-ui, sans-serif; }
+      canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+      #panel { position: absolute; top: 12px; right: 12px; width: 300px; max-height: calc(100% - 24px); overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(8px); padding: 10px 12px; box-sizing: border-box; }
+      #panel.min .body { display: none; }
+      h1 { margin: 0 0 2px; font-size: 14px; letter-spacing: 0.02em; display: flex; justify-content: space-between; align-items: center; }
+      h1 small { color: var(--dim); font-weight: 500; }
+      h2 { margin: 10px 0 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); border-top: 1px solid var(--line); padding-top: 8px; }
+      table { width: 100%; border-collapse: collapse; }
+      td { padding: 1px 0; }
+      td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-family: ui-monospace, monospace; }
+      .ok { color: var(--ok); } .bad { color: var(--bad); }
+      label { display: grid; grid-template-columns: 1fr 120px 44px; align-items: center; gap: 6px; margin: 2px 0; }
+      label output { text-align: right; font-family: ui-monospace, monospace; color: var(--dim); }
+      input[type=range] { width: 100%; accent-color: var(--acc); }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+      button, select { background: rgba(255, 255, 255, 0.08); color: var(--fg); border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px; font: inherit; cursor: pointer; }
+      button:hover, select:hover { background: rgba(255, 255, 255, 0.15); }
+      button.on { background: var(--acc); color: #04121c; border-color: transparent; }
+      #help { position: absolute; left: 12px; bottom: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; color: var(--dim); max-width: 520px; }
+      #help b { color: var(--fg); }
+      #field { position: absolute; left: 12px; top: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; display: none; }
+      #err { position: absolute; inset: 0; display: none; place-items: center; padding: 40px; color: var(--bad); background: #0b1016; white-space: pre-wrap; font-family: ui-monospace, monospace; }
+      @media (max-width: 700px) { #panel { width: calc(100% - 24px); max-height: 45%; } #help { display: none; } }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <div id="panel">
+      <h1>Río Vivo <small>laboratorio · PBF en GPU</small> <button id="min" title="plegar">–</button></h1>
+      <div class="body">
+        <div class="row">
+          <select id="profile">
+            <option value="dev">Desarrollo · 8k</option>
+            <option value="balanced" selected>Equilibrado · 16k</option>
+            <option value="high">Alta calidad · 32k</option>
+            <option value="experimental">Experimental · 65k</option>
+          </select>
+          <button id="reset">Reiniciar (R)</button>
+          <button id="pause">Pausa (P)</button>
+        </div>
+        <div class="row">
+          <button id="source">Fuente (F)</button>
+          <button id="rock">Lanzar roca (T)</button>
+          <button id="fieldBtn">Campos (V)</button>
+        </div>
+        <h2>Rendimiento</h2>
+        <table id="perf"></table>
+        <h2>Masa</h2>
+        <table id="mass"></table>
+        <h2>Física</h2>
+        <table id="phys"></table>
+        <h2>Parámetros físicos</h2>
+        <div id="physCtl"></div>
+        <h2>Óptica del agua</h2>
+        <div class="row">
+          <select id="preset">
+            <option value="video" selected>Como el vídeo</option>
+            <option value="stream">Arroyo de montaña</option>
+            <option value="real">Agua pura (medida)</option>
+            <option value="silty">Río con limo</option>
+          </select>
+          <select id="view">
+            <option value="0">Agua</option>
+            <option value="1">Normales</option>
+            <option value="2">Grosor</option>
+          </select>
+        </div>
+        <div id="optCtl"></div>
+      </div>
+    </div>
+    <div id="field"></div>
+    <div id="help"><b>WASD / flechas</b> empujar el agua (fuerza contabilizada) · <b>ratón</b> girar / zoom · <b>F</b> fuente · <b>T</b> roca · <b>V</b> campos físicos · <b>R</b> reiniciar · <b>P</b> pausa</div>
+    <div id="err"></div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
