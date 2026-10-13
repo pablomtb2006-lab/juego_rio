@@ -2,7 +2,7 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 const [out = 'captures/lab.png', frames = '60', query = 'profile=dev', setup = ''] = process.argv.slice(2);
-const server = await createServer({ server: { port: 0, host: '127.0.0.1' }, logLevel: 'error' });
+const server = await createServer({ server: { port: 0, host: '127.0.0.1', hmr: false, watch: null }, logLevel: 'error' }); // no reload when sources change mid-run
 await server.listen();
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });

@@ -2,6 +2,9 @@ import { header, neighbours } from './gpu/glsl.js';
 import { COLLISION_GLSL } from './FluidCollision.js';
 import { SpatialHash } from './SpatialHash.js';
 
+/** Rivers that can share one solver (owner slots in the identity texture; the last is "neutral"). */
+export const MAX_OWNERS = 8;
+
 /**
  * FluidSolver — Position Based Fluids (Macklin & Müller 2013) on the GPU, WebGL2.
  *
@@ -39,6 +42,16 @@ export class FluidSolver {
     this.rawV = T();
     this.fields = T(); // ∇·v, ρ, p, |ω|
     this.aniso = [T(), T(), T()]; // render-only: ellipsoid axis 1 + scale, axis 2 + scale, smoothed centre + scale 3
+    // IDENTITY (rivers): rgb = dye absorbance σ (1/m, visual), a = owner river index (0..MAX_OWNERS−1).
+    // Created zeroed (owner 0, no dye): without rivers nothing reads it and nothing changes.
+    // It is permuted with the particles every substep, so index i is always the same particle in
+    // pos / vel / id. Ping-pong index `idCur` (independent of `cur`).
+    this.id = [T(), T()];
+    this.idCur = 0;
+    // per-river force data, MAX_OWNERS × 3 texels (a texture, not uniforms: the collision geometry
+    // already uses ~190 of the 224 fragment uniform vectors WebGL2 guarantees)
+    this.ownerTex = gpu.texture(MAX_OWNERS, 3);
+    this.ownersOn = false;
     this.buildPrograms();
   }
 
@@ -92,12 +105,39 @@ uniform vec4 uCtrlA;   // xyz: commanded acceleration (m/s²); w: radius of infl
 uniform vec4 uCtrlC;   // xyz: centre of influence; w: 1 = on
 uniform vec3 uSinkMin;
 uniform vec3 uSinkMax;
+// PER-RIVER FORCES (RiverEcosystem). uOwners = 0: off, the solver is exactly the single-body one.
+// uOwnerTex, texel (k, row):
+//   row 0 .xyz  steering acceleration of river k (m/s², player input or AI)  — external, booked
+//   row 0 .w    body cohesion stiffness κ (1/s²)                            — GAME RULE
+//   row 1 .xyz  centre of mass of river k (last measurement), .w cohesion cap (m/s²)
+//   row 2 .xyz  mean velocity of river k, .w internal damping c (1/s)          — GAME RULE
+// Cohesion κ(C−x)·(horizontal) and damping −c(v−v̄) are INTERNAL to a river: summed over its
+// particles they vanish (Σ(C−x_i) = 0, Σ(v_i−v̄) = 0), so they do not move the river's centre of
+// mass; they only keep it a body. Exact only with the current C and v̄: here they lag one frame.
+uniform int uOwners;
+uniform sampler2D uOwnerTex;
+uniform sampler2D uId;
 out vec4 o;
 vec3 controlAccel(vec3 p) {
   if (uCtrlC.w < 0.5) return vec3(0.0);
   if (uCtrlA.w <= 0.0) return uCtrlA.xyz;
   float d = length((p - uCtrlC.xyz).xz);
   return uCtrlA.xyz * (1.0 - smoothstep(uCtrlA.w * 0.6, uCtrlA.w, d));
+}
+vec3 ownerAccel(int i, vec3 p, vec3 v) {
+  if (uOwners == 0) return vec3(0.0);
+  int k = clamp(int(texelFetch(uId, tc(i), 0).a + 0.5), 0, ${MAX_OWNERS - 1});
+  vec4 A = texelFetch(uOwnerTex, ivec2(k, 0), 0);
+  vec4 C = texelFetch(uOwnerTex, ivec2(k, 1), 0);
+  vec4 Vm = texelFetch(uOwnerTex, ivec2(k, 2), 0);
+  vec3 d = C.xyz - p;
+  d.y = 0.0;
+  vec3 coh = A.w * d;
+  float l = length(coh);
+  if (l > C.w) coh *= C.w / l;
+  vec3 dv = v - Vm.xyz;
+  dv.y = 0.0;
+  return A.xyz + coh - Vm.w * dv;
 }
 void main() {
   int i = fragIndex();
@@ -106,7 +146,7 @@ void main() {
   if (P.w < 0.0) { o = P; return; }
   if (any(isnan(P.xyz)) || any(isnan(V.xyz)) || any(isinf(P.xyz))) { o = vec4(0.0, -1.0e4, 0.0, -2.0); return; } // lost: counted
   if (all(greaterThanEqual(P.xyz, uSinkMin)) && all(lessThanEqual(P.xyz, uSinkMax))) { o = vec4(P.xyz, -1.0); return; }
-  vec3 v = V.xyz + (uGravity + controlAccel(P.xyz)) * uDt;
+  vec3 v = V.xyz + (uGravity + controlAccel(P.xyz) + ownerAccel(i, P.xyz, V.xyz)) * uDt;
   o = vec4(collide(P.xyz + v * uDt), P.w);
 }`,
     );
@@ -118,15 +158,18 @@ uniform sampler2D uKeys;
 uniform sampler2D uPos;
 uniform sampler2D uPred;
 uniform sampler2D uVel;
+uniform sampler2D uId;
 layout(location = 0) out vec4 oX;
 layout(location = 1) out vec4 oP;
 layout(location = 2) out vec4 oV;
+layout(location = 3) out vec4 oI;
 void main() {
   int i = fragIndex();
   ivec2 s = tc(int(texelFetch(uKeys, tc(i), 0).y));
   oX = texelFetch(uPos, s, 0);
   oP = texelFetch(uPred, s, 0);
   oV = texelFetch(uVel, s, 0);
+  oI = texelFetch(uId, s, 0);
 }`,
     );
 
@@ -489,23 +532,45 @@ void main() {
       uCtrlC: ctrl?.center ?? [0, 0, 0, 0],
       uSinkMin: sink?.min ?? [1e9, 1e9, 1e9],
       uSinkMax: sink?.max ?? [-1e9, -1e9, -1e9],
+      uOwners: this.ownersOn ? 1 : 0,
+      uOwnerTex: this.ownerTex,
     });
     return u;
   }
 
+  /**
+   * Per-river forces for the next substeps (RiverEcosystem, once per frame).
+   * @param {Float32Array|null} data  MAX_OWNERS × 3 × 4 floats (rows: steer+κ, centre+cap, v̄+damping); null = off
+   */
+  setOwners(data) {
+    this.ownersOn = !!data;
+    if (data) this.gpu.upload(this.ownerTex, data);
+  }
+
+  get identity() {
+    return this.id[this.idCur];
+  }
+
+  /**
+   * @param {number} dt
+   * @param {object} [ctrl]   uniform control field (RiverController)
+   * @param {object} [sink]
+   */
   substep(dt, ctrl = null, sink = null) {
     const { gpu, hash, cfg } = this;
     const u = this.uniforms(dt, ctrl, sink);
     const a = this.cur;
     const b = 1 - a;
+    const ia = this.idCur;
 
     gpu.timeBegin('predict');
-    gpu.pass(this.predictProg, [this.pred], { ...u, uPos: this.pos[a], uVel: this.vel[a] });
+    gpu.pass(this.predictProg, [this.pred], { ...u, uPos: this.pos[a], uVel: this.vel[a], uId: this.id[ia] });
     gpu.timeEnd();
 
     gpu.timeBegin('neighbours');
     const keys = hash.sort(this.pred, u);
-    gpu.pass(this.reorderProg, [this.sX, this.sP[0], this.sV], { uKeys: keys, uPos: this.pos[a], uPred: this.pred, uVel: this.vel[a] });
+    gpu.pass(this.reorderProg, [this.sX, this.sP[0], this.sV, this.id[1 - ia]], { uKeys: keys, uPos: this.pos[a], uPred: this.pred, uVel: this.vel[a], uId: this.id[ia] });
+    this.idCur = 1 - ia;
     const cells = hash.buildCells();
     this.lastCells = cells;
     gpu.timeEnd();

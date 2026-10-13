@@ -6,6 +6,8 @@ import { FreeSurfaceReconstruction } from '../../src/fluid/render/FreeSurfaceRec
 import { WaterRendering, SKY_GLSL } from '../../src/fluid/render/WaterRendering.js';
 import { FoamAndSpray } from '../../src/fluid/render/FoamAndSpray.js';
 import { FieldView, FIELDS } from '../../src/fluid/render/FieldView.js';
+import { RiverEcosystem } from '../../src/fluid/RiverEcosystem.js';
+import { RIVALS, RivalsHud } from './rivals.js';
 
 /**
  * Río Vivo — water laboratory, isolated from the game.
@@ -53,6 +55,13 @@ const WATER = [{ min: [-10.8, 2.0, -10.8], max: [-5.4, 3.5, -5.4] }];
 const SOURCE = { center: [-8, 5.6, -8], dir: [0, -1, 0], radius: 0.45, speed: 3.5 };
 const SINK = { min: [9.6, 0, 9.6], max: [12, 1.2, 12] };
 
+// ?modo=rivales: rival rivers that absorb each other (lab/agua/rivals.js, docs/RIVALES.md)
+const MODE = params.get('modo') === 'rivales' ? 'rivales' : 'laboratorio';
+const SC =
+  MODE === 'rivales'
+    ? { domain: RIVALS.domain, boxes: RIVALS.boxes, spheres: RIVALS.spheres, water: null, source: null, sink: null }
+    : { domain: DOMAIN, boxes: ARENA.boxes, spheres: ARENA.spheres, water: WATER, source: SOURCE, sink: SINK };
+
 // --- renderer, camera, light --------------------------------------------------------------------
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
@@ -66,6 +75,10 @@ const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
 camera.position.set(10, 10.5, 15);
 const controls = new OrbitControls(camera, canvas);
 controls.target.set(-3, 0.5, -3);
+if (MODE === 'rivales') {
+  camera.position.set(-6, 15, -24);
+  controls.target.set(-4, 0.5, -4);
+}
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI * 0.49;
 
@@ -141,7 +154,7 @@ scene.add(floor);
 
 const blockMat = new THREE.MeshStandardMaterial({ color: 0x9ba4a9, roughness: 0.85 });
 const rockMat = new THREE.MeshStandardMaterial({ color: 0x6d7c84, roughness: 0.95, flatShading: true });
-for (const b of ARENA.boxes) {
+for (const b of SC.boxes) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(b.half[0] * 2, b.half[1] * 2, b.half[2] * 2), blockMat);
   m.position.fromArray(b.center);
   m.rotation.fromArray([...(b.rot ?? [0, 0, 0]), 'XYZ']);
@@ -161,14 +174,17 @@ function rockMesh(r) {
   m.castShadow = m.receiveShadow = true;
   return m;
 }
-for (const s of ARENA.spheres) {
+for (const s of SC.spheres) {
   const m = rockMesh(s.radius);
   m.position.fromArray(s.center);
   scene.add(m);
 }
 // arena kerb (the domain walls are real for the solver: show them)
 const kerbMat = new THREE.MeshStandardMaterial({ color: 0x8b9196, roughness: 0.9 });
-for (const [cx, cz, sx, sz] of [[0, -12.2, 24.8, 0.4], [0, 12.2, 24.8, 0.4], [-12.2, 0, 0.4, 24.8], [12.2, 0, 0.4, 24.8]]) {
+const dm = SC.domain;
+const kx = (dm.max[0] - dm.min[0]) / 2 + 0.2;
+const kz = (dm.max[2] - dm.min[2]) / 2 + 0.2;
+for (const [cx, cz, sx, sz] of [[0, -kz, 2 * kx + 0.4, 0.4], [0, kz, 2 * kx + 0.4, 0.4], [-kx, 0, 0.4, 2 * kz + 0.4], [kx, 0, 0.4, 2 * kz + 0.4]]) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(sx, 1.4, sz), kerbMat);
   m.position.set(cx, 0.7, cz);
   m.receiveShadow = m.castShadow = true;
@@ -178,10 +194,10 @@ for (const [cx, cz, sx, sz] of [[0, -12.2, 24.8, 0.4], [0, 12.2, 24.8, 0.4], [-1
 const drain = new THREE.Mesh(new THREE.PlaneGeometry(SINK.max[0] - SINK.min[0], SINK.max[2] - SINK.min[2]), new THREE.MeshStandardMaterial({ color: 0x1d2226, roughness: 0.6 }));
 drain.rotation.x = -Math.PI / 2;
 drain.position.set((SINK.min[0] + SINK.max[0]) / 2, 0.01, (SINK.min[2] + SINK.max[2]) / 2);
-scene.add(drain);
+if (SC.sink) scene.add(drain);
 const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.2, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0x59636a, roughness: 0.5, metalness: 0.4, side: THREE.DoubleSide }));
 spout.position.set(SOURCE.center[0], SOURCE.center[1] + 0.7, SOURCE.center[2]);
-scene.add(spout);
+if (SC.source) scene.add(spout);
 const thrownRock = rockMesh(0.6);
 thrownRock.visible = false;
 scene.add(thrownRock);
@@ -189,7 +205,7 @@ scene.add(thrownRock);
 // --- simulation ------------------------------------------------------------------------------------
 let profileName = PROFILES[params.get('profile')] ? params.get('profile') : 'balanced';
 document.getElementById('profile').value = profileName;
-let sim, controller, surface, foam, fieldView, source, rock;
+let sim, controller, surface, foam, fieldView, source, rock, eco, hud;
 const water = new WaterRendering(renderer, sky);
 let sceneRT;
 const emptyDepth = new THREE.DataTexture(new Float32Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat, THREE.FloatType);
@@ -199,14 +215,23 @@ function build() {
   const P = PROFILES[profileName];
   sim = new RiverSimulation(gl, {
     capacity: P.capacity,
-    domain: DOMAIN,
-    obstacles: { boxes: ARENA.boxes, spheres: ARENA.spheres },
+    domain: SC.domain,
+    obstacles: { boxes: SC.boxes, spheres: SC.spheres },
     config: { spacing: P.spacing, substeps: P.substeps, iterations: P.iterations },
   });
-  sim.fill(WATER);
-  source = sim.addSource(SOURCE);
-  source.on = sourceOn;
-  sim.setSink(SINK.min, SINK.max);
+  hud?.dispose();
+  eco = hud = null;
+  source = { on: false, speed: 0, starved: 0 };
+  if (MODE === 'rivales') {
+    eco = new RiverEcosystem(sim, { rivers: RIVALS.rivers, neutral: RIVALS.neutral, colorPolicy: $('policy').value, seed: (Math.random() * 1e6) | 0 });
+    eco.fill();
+    hud = new RivalsHud(eco, camera);
+  } else {
+    sim.fill(SC.water);
+    source = sim.addSource(SC.source);
+    source.on = sourceOn;
+    sim.setSink(SC.sink.min, SC.sink.max);
+  }
   controller = new RiverController(sim, { maxAccel: 6, response: 3 });
   surface = new FreeSurfaceReconstruction(renderer, sim.L, sim.cfg.particleRadius);
   foam = new FoamAndSpray(sim.L);
@@ -278,7 +303,9 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyF') toggleSource();
   if (e.code === 'KeyT') throwRock();
   if (e.code === 'KeyV') toggleField();
+  if (e.code === 'KeyC') follow = !follow;
 });
+let follow = true;
 window.addEventListener('keyup', (e) => keys.delete(e.code));
 function steer() {
   let f = 0;
@@ -292,7 +319,8 @@ function steer() {
   fwd.y = 0;
   fwd.normalize();
   const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
-  controller.setInput(fwd.x * f + right.x * s, fwd.z * f + right.z * s);
+  if (eco) eco.player?.setInput(fwd.x * f + right.x * s, fwd.z * f + right.z * s);
+  else controller.setInput(fwd.x * f + right.x * s, fwd.z * f + right.z * s);
 }
 
 // --- panel -----------------------------------------------------------------------------------------
@@ -312,11 +340,23 @@ $('preset').onchange = (e) => {
   buildOptics();
 };
 $('view').onchange = (e) => (water.params.view = +e.target.value);
+$('mode').onchange = (e) => {
+  const q = new URLSearchParams(location.search);
+  if (e.target.value === 'rivales') q.set('modo', 'rivales');
+  else q.delete('modo');
+  location.search = q.toString();
+};
+$('policy').onchange = (e) => {
+  if (!eco) return;
+  eco.colorPolicy = e.target.value;
+  eco.applyColorPolicy();
+};
 function togglePause() {
   paused = !paused;
   $('pause').classList.toggle('on', paused);
 }
 function toggleSource() {
+  if (eco) return;
   sourceOn = !sourceOn;
   source.on = sourceOn;
   $('source').classList.toggle('on', sourceOn);
@@ -350,6 +390,17 @@ function buildPhysics() {
   slider(el, 'Roce del lecho (1/s)', () => sim.cfg.wallDrag, (v) => (sim.cfg.wallDrag = v), 0, 10, 0.1);
   slider(el, 'Iteraciones', () => sim.cfg.iterations, (v) => (sim.cfg.iterations = v), 1, 10, 1, (v) => v.toFixed(0));
   slider(el, 'Subpasos', () => sim.cfg.substeps, (v) => (sim.cfg.substeps = v), 1, 8, 1, (v) => v.toFixed(0));
+  if (eco) {
+    const a = eco.absorption.p;
+    slider(el, 'Cohesión de cuerpo κ (1/s²)', () => eco.cohesion.kappa, (v) => (eco.cohesion.kappa = v), 0, 20, 0.5);
+    slider(el, 'Amortiguación interna (1/s)', () => eco.cohesion.damping, (v) => (eco.cohesion.damping = v), 0, 3, 0.05);
+    slider(el, 'Absorción T_max (s)', () => a.Tmax, (v) => (a.Tmax = v), 2, 15, 0.1);
+    slider(el, 'Absorción T_min (s)', () => a.Tmin, (v) => (a.Tmin = v), 0.5, 5, 0.1);
+    slider(el, 'Área de contacto A_on (m²)', () => a.areaOn, (v) => (a.areaOn = v), 0.1, 3, 0.05);
+    slider(el, 'Difusión del color (m²/s)', () => eco.identity.params.diffusion, (v) => (eco.identity.params.diffusion = v), 0, 0.05, 0.001, (v) => v.toFixed(3));
+    slider(el, 'Relajación del color (1/s)', () => eco.identity.params.relax, (v) => (eco.identity.params.relax = v), 0, 3, 0.05);
+    return;
+  }
   slider(el, 'Caudal fuente (m/s)', () => source.speed, (v) => (source.speed = v), 0.5, 8, 0.1);
   slider(el, 'Fuerza jugador (m/s²)', () => controller.maxAccel, (v) => (controller.maxAccel = v), 0, 15, 0.5);
 }
@@ -384,7 +435,8 @@ let cpuMs = 0;
 function updatePanel() {
   const m = sim.measure();
   stats = m;
-  const work = controller.account(m);
+  const work = eco ? { work: eco.player?.work ?? 0 } : controller.account(m);
+  if (hud) hud.panel($('rivers'), $('events'));
   const t = sim.gpu.pollTimers();
   const P = PROFILES[profileName];
   const gpuSim = ['predict', 'neighbours', 'constraints', 'velocity'].reduce((a, k) => a + (t[k] || 0), 0);
@@ -433,11 +485,21 @@ function frame() {
   if (!paused) {
     // the solver advances 1/60 s of simulated time per frame: if the GPU cannot keep up, the
     // simulation slows down instead of taking unstable steps (the panel shows simulated time)
-    controller.update(1 / 60);
     updateRock(1 / 60);
     sim.gpu.timing = true;
-    sim.step(1 / 60);
+    if (eco) eco.frame(1 / 60);
+    else {
+      controller.update(1 / 60);
+      sim.step(1 / 60);
+    }
     renderer.resetState();
+  }
+  if (eco && follow && eco.player?.count) {
+    // the camera follows the player's river (its measured centre of mass), keeping the user's angle
+    const p = eco.player.com;
+    const d = new THREE.Vector3(p[0], 0.5, p[2]).sub(controls.target).multiplyScalar(0.06);
+    controls.target.add(d);
+    camera.position.add(d);
   }
 
   const showField = !!fieldView.field;
@@ -453,11 +515,12 @@ function frame() {
   else {
     const aniso = sim.anisotropy(surface.splatRadius);
     renderer.resetState();
-    surf = surface.render(camera, sim.position, sceneRT.depthTexture, aniso);
+    surf = surface.render(camera, sim.position, sceneRT.depthTexture, aniso, sim.identity);
   }
   renderer.setRenderTarget(null);
   water.render(camera, sceneRT.texture, sceneRT.depthTexture, surf, size.w, size.h);
   if (!showField) foam.render(renderer, camera, sim, surf, sceneRT.depthTexture, size.w, size.h);
+  hud?.frame(size.w, size.h);
 
   cpuMs = performance.now() - t0;
   frames++;
@@ -475,9 +538,15 @@ function frame() {
 }
 
 try {
+  document.body.dataset.mode = MODE;
+  $('mode').value = MODE;
+  if (MODE === 'rivales') {
+    water.setPreset('rivales');
+    $('preset').value = 'rivales';
+  }
   build();
   if (params.has('source')) toggleSource();
-  window.__lab = { get sim() { return sim; }, frame, water, get surface() { return surface; }, get controller() { return controller; }, throwRock, toggleField, camera, controls, build, get stats() { return stats; }, toggleSource };
+  window.__lab = { get sim() { return sim; }, get eco() { return eco; }, frame, water, get surface() { return surface; }, get controller() { return controller; }, throwRock, toggleField, camera, controls, build, get stats() { return stats; }, toggleSource };
   window.__manual = params.has('manual');
   window.__READY = true;
   if (!window.__manual) requestAnimationFrame(frame);

@@ -9,7 +9,9 @@ import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js';
  *   - reflection      Fresnel (Schlick, F0 = 0.02 ⇔ n = 1.33) × sky radiance + sun glint
  *   - refraction      the bed seen through the surface, displaced along the normal, more where
  *                     the water is thicker (screen-space: it can only show what is on screen)
- *   - absorption      Beer–Lambert per colour channel: T = exp(−(σa + σs)·thickness)
+ *   - absorption      Beer–Lambert per colour channel: T = exp(−(σa + σs)·thickness − τ_dye)
+ *                     τ_dye = Σ σ_dye·chord: the optical depth of each river's colour along the
+ *                     ray (FreeSurfaceReconstruction); 0 when there are no rivers
  *   - body colour     single scattering by suspended matter: albedo σs/(σa+σs) per channel,
  *                     times the ambient light, times (1 − exp(−(σa+σs)·thickness))
  * So the colour of the water COMES FROM absorption and turbidity over the real thickness of water
@@ -42,6 +44,9 @@ export const WATER_PRESETS = {
   real: { absorb: [0.34, 0.057, 0.0092], turbidity: 0.02, scatterTint: [1, 1, 1], reflect: 1.0, refract: 1.0, bottom: 1.0, intensity: 1.0 },
   // a river carrying silt
   silty: { absorb: [1.2, 1.4, 1.9], turbidity: 2.4, scatterTint: [0.85, 0.72, 0.5], reflect: 0.9, refract: 0.7, bottom: 0.8, intensity: 1.0 },
+  // rival rivers: the colour comes from each river's dye absorbance (RiverEntity), so the base
+  // water is nearly clear and the scattering is neutral (white) — it lights whatever the dye leaves
+  rivales: { absorb: [0.34, 0.057, 0.0092], turbidity: 0.7, scatterTint: [1, 1, 1], reflect: 1.0, refract: 1.0, bottom: 1.0, intensity: 1.45 },
 };
 
 const VS = /* glsl */ `
@@ -113,7 +118,10 @@ void main() {
     if (dot(n, V) < 0.0) n = -n;
     vec3 nW = normalize(mat3(uViewInv) * n);
     vec3 VW = normalize(mat3(uViewInv) * V);
-    float thick = max(texture(uThick, vUv).r, 0.0);
+    vec4 TH = texture(uThick, vUv);
+    float thick = max(TH.a, 0.0);
+    vec3 dyeOD = max(TH.rgb, vec3(0.0));               // Σ σ_dye · chord (dimensionless)
+    vec3 dyeSigma = dyeOD / max(thick, 1e-3);          // mean dye absorbance along the ray (1/m)
 
     // refraction: displace the lookup of the bed along the surface normal, more through thicker water
     vec2 ruv = clamp(vUv - n.xy * uRefract * min(thick, 1.5) * 0.06, vec2(0.0), vec2(1.0));
@@ -121,8 +129,8 @@ void main() {
     vec3 bed = texture(uScene, ruv).rgb;
 
     // absorption + single scattering over the thickness actually crossed
-    vec3 sigma = uAbsorb + vec3(uTurbidity);
-    vec3 T = exp(-sigma * thick);
+    vec3 sigma = uAbsorb + dyeSigma + vec3(uTurbidity);
+    vec3 T = exp(-(uAbsorb + vec3(uTurbidity)) * thick - dyeOD);
     vec3 albedo = uTurbidity / max(sigma, vec3(1e-4)) * uScatterTint;
     vec3 ambient = skyRadiance(vec3(0.0, 1.0, 0.0)) * 0.55 + uSunColor * max(uSunDir.y, 0.0) * 0.32;
     vec3 body = albedo * ambient * (1.0 - T) * uIntensity;

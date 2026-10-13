@@ -28,6 +28,22 @@
       #help b { color: var(--fg); }
       #field { position: absolute; left: 12px; top: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; display: none; }
       #err { position: absolute; inset: 0; display: none; place-items: center; padding: 40px; color: var(--bad); background: #0b1016; white-space: pre-wrap; font-family: ui-monospace, monospace; }
+      #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; display: none; }
+      .rlabel { position: absolute; left: 0; top: 0; white-space: nowrap; text-align: center; font-size: 11px; text-shadow: 0 1px 3px #000, 0 0 8px rgba(0, 0, 0, 0.6); will-change: transform; }
+      .rlabel b { font-size: 12px; letter-spacing: 0.02em; }
+      .rlabel .m { color: #e8f1f6; font-family: ui-monospace, monospace; }
+      .rlabel .st { color: #b9cad6; font-size: 10px; }
+      .rlabel .bar { display: none; width: 84px; height: 5px; margin: 3px auto 1px; border-radius: 3px; background: rgba(0, 0, 0, 0.45); overflow: hidden; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25); }
+      .rlabel .bar i { display: block; height: 100%; width: 0; }
+      .rlabel.eaten .st { color: #ffb4a8; }
+      .rlabel.eat .st { color: #a6f5c0; }
+      .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3); }
+      tr.sub td { color: var(--dim); font-size: 11px; padding-bottom: 3px; }
+      td small { color: var(--dim); }
+      #banner { position: absolute; inset: 0; display: none; place-items: center; font-size: 26px; font-weight: 700; letter-spacing: 0.02em; text-shadow: 0 2px 12px #000; pointer-events: none; }
+      .rivals-only { display: none; }
+      body[data-mode='rivales'] .rivals-only { display: block; }
+      body[data-mode='rivales'] .lab-only { display: none; }
       @media (max-width: 700px) { #panel { width: calc(100% - 24px); max-height: 45%; } #help { display: none; } }
     </style>
   </head>
@@ -47,9 +63,26 @@
           <button id="pause">Pausa (P)</button>
         </div>
         <div class="row">
-          <button id="source">Fuente (F)</button>
+          <select id="mode">
+            <option value="laboratorio">Laboratorio de agua</option>
+            <option value="rivales">Ríos rivales</option>
+          </select>
+          <button id="source" class="lab-only">Fuente (F)</button>
           <button id="rock">Lanzar roca (T)</button>
           <button id="fieldBtn">Campos (V)</button>
+        </div>
+        <div class="rivals-only">
+          <h2>Ríos</h2>
+          <table id="rivers"></table>
+          <h2>Absorción y conservación</h2>
+          <table id="events"></table>
+          <div class="row">
+            <select id="policy" title="Política de color tras la fusión">
+              <option value="receptor" selected>Color: conserva el del receptor</option>
+              <option value="mezcla">Color: mezcla física (por masa)</option>
+              <option value="estilizado">Color: estilizado (trofeo)</option>
+            </select>
+          </div>
         </div>
         <h2>Rendimiento</h2>
         <table id="perf"></table>
@@ -66,6 +99,7 @@
             <option value="stream">Arroyo de montaña</option>
             <option value="real">Agua pura (medida)</option>
             <option value="silty">Río con limo</option>
+            <option value="rivales">Ríos de colores</option>
           </select>
           <select id="view">
             <option value="0">Agua</option>
@@ -77,7 +111,10 @@
       </div>
     </div>
     <div id="field"></div>
-    <div id="help"><b>WASD / flechas</b> empujar el agua (fuerza contabilizada) · <b>ratón</b> girar / zoom · <b>F</b> fuente · <b>T</b> roca · <b>V</b> campos físicos · <b>R</b> reiniciar · <b>P</b> pausa</div>
+    <div id="labels"></div>
+    <div id="banner"></div>
+    <div id="help" class="rivals-only"><b>WASD / flechas</b> mueve tu río (turquesa) · toca a un río más pequeño para absorberlo · huye de los grandes · <b>C</b> cámara libre/seguir · <b>R</b> reiniciar · <b>P</b> pausa</div>
+    <div id="help" class="lab-only"><b>WASD / flechas</b> empujar el agua (fuerza contabilizada) · <b>ratón</b> girar / zoom · <b>F</b> fuente · <b>T</b> roca · <b>V</b> campos físicos · <b>R</b> reiniciar · <b>P</b> pausa</div>
     <div id="err"></div>
     <script type="module" src="./main.js"></script>
   </body>

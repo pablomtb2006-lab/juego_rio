@@ -9,8 +9,10 @@ npm install
 npm run dev
 → http://localhost:5173/lab/agua/                 laboratorio
 → http://localhost:5173/lab/agua/?profile=high     perfil de alta calidad
+→ http://localhost:5173/lab/agua/?modo=rivales     ríos rivales que se absorben (docs/RIVALES.md)
 → http://localhost:5173/lab/agua/tests.html        pruebas en el navegador
 node tools/fluid-tests.mjs                         pruebas sin pantalla (escribe docs/validation/results.json)
+node tools/fluid-tests.mjs rivales                 las 10 pruebas de rivales y absorción
 ```
 
 Controles: **WASD / flechas** empujan el agua (fuerza contabilizada) · ratón gira y hace zoom ·
@@ -50,6 +52,7 @@ restricción de densidad ρ_i = ρ0 resuelta por iteraciones; no es exacta y su 
 | RiverMassAccounting | `RiverMassAccounting.js` |
 | SimulationDiagnostics | `SimulationDiagnostics.js` + `render/FieldView.js` + panel del laboratorio |
 | FluidValidationTests | `FluidValidationTests.js` + `tools/fluid-tests.mjs` |
+| Ríos rivales (ver `docs/RIVALES.md`) | `RiverEntity.js`, `RiverIdentity.js` (GPU), `AbsorptionSystem.js`, `RivalAI.js`, `RiverEcosystem.js`, `RivalTests.js` |
 
 GPU: `gpu/GPU.js` (WebGL2, texturas RGBA32F, MRT, medidores de tiempo GPU) y `gpu/glsl.js`.
 El solver no usa three.js: comparte el contexto y el laboratorio llama a `renderer.resetState()`.

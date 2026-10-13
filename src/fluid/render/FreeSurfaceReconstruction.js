@@ -6,7 +6,9 @@ import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js';
  * every frame, in screen space (van der Laan, Green & Sainz 2009):
  *
  *   1. depth      every particle is splatted as a sphere; the nearest one per pixel wins
- *   2. thickness  how much water a view ray crosses (additive, half resolution)
+ *   2. thickness  how much water a view ray crosses (additive, half resolution); rgb carries the
+ *                 dye's optical depth Σ σ·chord of each river's water (Beer–Lambert is additive in
+ *                 optical depth, so mixing waters of different colour along a ray is exact)
  *   3. smoothing  a depth-aware (bilateral) separable filter melts the spheres into one surface
  *                 without blurring across silhouettes; the thickness gets a plain Gaussian
  *   4. normals    rebuilt from the smoothed depth by the compositor (WaterRendering)
@@ -28,9 +30,11 @@ uniform sampler2D uPos;
 uniform sampler2D uAnA;
 uniform sampler2D uAnB;
 uniform sampler2D uAnC;
+uniform sampler2D uId;
 uniform int uTW;
 uniform float uPointScale;
 out vec3 vC;
+flat out vec3 vSigma;
 flat out vec3 vM0;
 flat out vec3 vM1;
 flat out vec3 vM2;
@@ -42,6 +46,7 @@ void main() {
   vec4 A = texelFetch(uAnA, t, 0);
   vec4 B = texelFetch(uAnB, t, 0);
   vec4 C = texelFetch(uAnC, t, 0);
+  vSigma = texelFetch(uId, t, 0).rgb; // dye absorbance of this particle (rivers; 0 otherwise)
   vec3 s = max(vec3(A.w, B.w, C.w), vec3(1e-4));
   mat3 V = mat3(modelViewMatrix);
   vec3 a3 = cross(A.xyz, B.xyz);
@@ -65,6 +70,7 @@ in vec3 vC;
 flat in vec3 vM0;
 flat in vec3 vM1;
 flat in vec3 vM2;
+flat in vec3 vSigma;
 out vec4 fragColor;
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
@@ -140,14 +146,14 @@ uniform vec2 uRes;
 in vec2 vUv;
 out vec4 fragColor;
 void main() {
-  float sum = 0.0;
+  vec4 sum = vec4(0.0);
   float wsum = 0.0;
   for (int k = -6; k <= 6; k++) {
     float w = exp(-float(k * k) / 18.0);
-    sum += texture(uTex, vUv + uDir * float(k) / uRes).r * w;
+    sum += texture(uTex, vUv + uDir * float(k) / uRes) * w;
     wsum += w;
   }
-  fragColor = vec4(sum / wsum, 0.0, 0.0, 1.0);
+  fragColor = sum / wsum;
 }`;
 
 export class FreeSurfaceReconstruction {
@@ -174,11 +180,13 @@ export class FreeSurfaceReconstruction {
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6);
 
     this.anTex = [new THREE.ExternalTexture(null), new THREE.ExternalTexture(null), new THREE.ExternalTexture(null)];
+    this.idTex = new THREE.ExternalTexture(null);
     const common = {
       uPos: { value: this.posTex },
       uAnA: { value: this.anTex[0] },
       uAnB: { value: this.anTex[1] },
       uAnC: { value: this.anTex[2] },
+      uId: { value: this.idTex },
       uTW: { value: layout.TW },
       uPointScale: { value: 1 },
       uSceneDepth: { value: null },
@@ -198,7 +206,7 @@ export class FreeSurfaceReconstruction {
       glslVersion: THREE.GLSL3,
       uniforms: { ...common, uRes: { value: new THREE.Vector2(1, 1) }, uPointScale: { value: 1 } }, // half-res pass: own size and scale
       vertexShader: SPLAT_VS,
-      fragmentShader: SPHERE_FS(`fragColor = vec4(chord, 0.0, 0.0, 1.0);`),
+      fragmentShader: SPHERE_FS(`fragColor = vec4(vSigma * chord, chord);`),
       depthTest: false,
       depthWrite: false,
       blending: THREE.CustomBlending,
@@ -245,7 +253,8 @@ export class FreeSurfaceReconstruction {
     this.smoothRT = [new THREE.WebGLRenderTarget(w, h, { ...f, depthBuffer: false }), new THREE.WebGLRenderTarget(w, h, { ...f, depthBuffer: false })];
     const hw = Math.max(1, w >> 1);
     const hh = Math.max(1, h >> 1);
-    const hf = { type: THREE.HalfFloatType, format: THREE.RedFormat, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false };
+    // rgb: dye optical depth (dimensionless), a: water thickness (m)
+    const hf = { type: THREE.HalfFloatType, format: THREE.RGBAFormat, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false };
     this.thickRT = [new THREE.WebGLRenderTarget(hw, hh, hf), new THREE.WebGLRenderTarget(hw, hh, hf)];
   }
 
@@ -260,10 +269,11 @@ export class FreeSurfaceReconstruction {
     return this.particleRadius * this.params.splatScale;
   }
 
-  render(camera, positionTexture, sceneDepth, aniso) {
+  render(camera, positionTexture, sceneDepth, aniso, identityTexture) {
     const r = this.renderer;
     const p = this.params;
     this.posTex.sourceTexture = positionTexture;
+    this.idTex.sourceTexture = identityTexture;
     for (let k = 0; k < 3; k++) this.anTex[k].sourceTexture = aniso[k];
     const radius = this.splatRadius;
     const scale = this.h / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));

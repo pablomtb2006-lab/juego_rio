@@ -6,11 +6,14 @@ import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import fs from 'node:fs';
 
+//   node tools/fluid-tests.mjs rivales        → the ten rivals / absorption tests (r1 … r10)
 const ALL = ['freefall', 'rest', 'flow', 'control', 'dambreak', 'timestep', 'resolution'];
-const names = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const RIVALS = ['r1_graze', 'r2_similar', 'r3_large', 'r4_interrupted', 'r5_opposing', 'r6_aligned', 'r7_conservation', 'r8_color', 'r9_multiple', 'r10_stability'];
+const names = process.argv.slice(2).filter((a) => !a.startsWith('--')).flatMap((n) => (n === 'rivales' ? RIVALS : n === 'todo' ? [...ALL, ...RIVALS] : [n]));
 const todo = names.length ? names : ALL;
 
-const server = await createServer({ server: { port: 0, host: '127.0.0.1' }, logLevel: 'error' });
+// no file watching: editing sources while a long run is going must not reload the test page
+const server = await createServer({ server: { port: 0, host: '127.0.0.1', hmr: false, watch: null }, logLevel: 'error' });
 await server.listen();
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage();

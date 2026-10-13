@@ -56,7 +56,9 @@ export class RiverSimulation {
   /**
    * Fill boxes with water on a regular lattice at rest density. Tiny deterministic jitter breaks
    * the perfect symmetry of the lattice (a perfect lattice is an unstable equilibrium).
-   * @param {{min:number[],max:number[],velocity?:number[]}[]} blocks
+   * A block may belong to a river: `owner` (identity slot) and `dye` (absorbance σ, 1/m, visual).
+   * Block shapes: a box (min/max) or, with `radius`, the part of the box inside a vertical cylinder.
+   * @param {{min:number[],max:number[],velocity?:number[],owner?:number,dye?:number[],radius?:number}[]} blocks
    */
   fill(blocks) {
     const { TW, TH } = this.L;
@@ -64,27 +66,38 @@ export class RiverSimulation {
     const d = this.cfg.spacing;
     const pos = new Float32Array(N * 4);
     const vel = new Float32Array(N * 4);
+    const id = new Float32Array(N * 4);
+    this.blockCounts = [];
     let n = 0;
     let seed = 12345;
     const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff - 0.5) * 0.02 * d;
     for (const b of blocks) {
       const v = b.velocity ?? [0, 0, 0];
+      const dye = b.dye ?? [0, 0, 0];
+      const owner = b.owner ?? 0;
+      const cx = (b.min[0] + b.max[0]) / 2;
+      const cz = (b.min[2] + b.max[2]) / 2;
+      const n0 = n;
       for (let z = b.min[2] + d / 2; z < b.max[2]; z += d) {
         for (let y = b.min[1] + d / 2; y < b.max[1]; y += d) {
           for (let x = b.min[0] + d / 2; x < b.max[0]; x += d) {
+            if (b.radius && Math.hypot(x - cx, z - cz) > b.radius) continue;
             if (this.collision.obstacleDistance(x, y, z) < this.cfg.particleRadius) continue;
             if (n >= N) throw new Error(`[fluid] capacity ${N} exceeded while filling`);
             pos.set([x + rnd(), y + rnd(), z + rnd(), n], n * 4);
             vel.set([v[0], v[1], v[2], 0], n * 4);
+            id.set([dye[0], dye[1], dye[2], owner], n * 4);
             n++;
           }
         }
       }
+      this.blockCounts.push(n - n0);
     }
     for (let i = n; i < N; i++) pos.set([0, -1e4, 0, -1], i * 4);
     const s = this.solver;
     this.gpu.upload(s.pos[s.cur], pos);
     this.gpu.upload(s.vel[s.cur], vel);
+    this.gpu.upload(s.id[s.idCur], id);
     this.accounting.reset(n);
     this.nActiveBound = n;
     this.time = 0;
@@ -100,9 +113,9 @@ export class RiverSimulation {
    * Volumetric flow Q = A · v (A = πr²) is honoured by emitting one lattice layer every time the
    * water has advanced one spacing. Every particle is booked as inflow.
    */
-  addSource({ center, dir, radius, speed }) {
+  addSource({ center, dir, radius, speed, owner = 0, dye = [0, 0, 0] }) {
     const l = Math.hypot(...dir);
-    const src = { center: [...center], dir: dir.map((x) => x / l), radius, speed, travelled: 0, on: true };
+    const src = { center: [...center], dir: dir.map((x) => x / l), radius, speed, travelled: 0, on: true, owner, dye: [...dye] };
     // the disc lattice, built once
     const d = this.cfg.spacing;
     const [ux, uy, uz] = Math.abs(src.dir[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
@@ -186,19 +199,21 @@ void main() {
     // inactive particles sort last, so [N−k, N) is free whenever nActive ≤ N − k
     const pos = new Float32Array(k * 4);
     const vel = new Float32Array(k * 4);
+    const id = new Float32Array(k * 4);
     const off = src.travelled; // sub-step placement keeps layers evenly spaced
     for (let i = 0; i < k; i++) {
       const p = src.layer[i];
       pos.set([p[0] + src.dir[0] * off, p[1] + src.dir[1] * off, p[2] + src.dir[2] * off, this.nextId++], i * 4);
       vel.set([src.dir[0] * src.speed, src.dir[1] * src.speed, src.dir[2] * src.speed, 0], i * 4);
+      id.set([src.dye[0], src.dye[1], src.dye[2], src.owner], i * 4);
     }
-    this.writeTail(pos, vel, k);
+    this.writeTail(pos, vel, k, id);
     this.accounting.addInflow(k);
     this.nActiveBound += k;
   }
 
   /** Write k particles into the last k texels (row-major), in at most two rectangles. */
-  writeTail(pos, vel, k) {
+  writeTail(pos, vel, k, id) {
     const { TW, TH } = this.L;
     const s = this.solver;
     const start = TW * TH - k;
@@ -209,6 +224,7 @@ void main() {
       const w = TW - x0;
       this.gpu.upload(s.pos[s.cur], pos.subarray(0, w * 4), x0, y0, w, 1);
       this.gpu.upload(s.vel[s.cur], vel.subarray(0, w * 4), x0, y0, w, 1);
+      this.gpu.upload(s.id[s.idCur], id.subarray(0, w * 4), x0, y0, w, 1);
       o = w;
     }
     const rows = (k - o) / TW;
@@ -216,6 +232,7 @@ void main() {
       const y = TH - rows;
       this.gpu.upload(s.pos[s.cur], pos.subarray(o * 4), 0, y, TW, rows);
       this.gpu.upload(s.vel[s.cur], vel.subarray(o * 4), 0, y, TW, rows);
+      this.gpu.upload(s.id[s.idCur], id.subarray(o * 4), 0, y, TW, rows);
     }
   }
 
@@ -259,5 +276,10 @@ void main() {
 
   get velocity() {
     return this.solver.velocity;
+  }
+
+  /** Identity texture: rgb dye absorbance, a owner river (same order as position/velocity). */
+  get identity() {
+    return this.solver.identity;
   }
 }

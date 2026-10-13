@@ -14,18 +14,24 @@
     <pre id="log"></pre>
     <script type="module">
       import { TESTS, sweep } from '../../src/fluid/FluidValidationTests.js';
+      import { RIVAL_TESTS, RIVAL_TEST_NAMES } from '../../src/fluid/RivalTests.js';
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = 1;
       const gl = canvas.getContext('webgl2', { antialias: false, depth: false });
       const log = document.getElementById('log');
       async function run(name, opts) {
         const t0 = performance.now();
-        const r = name === 'timestep' || name === 'resolution' ? await sweep(gl, name) : await TESTS[name](gl, opts);
+        const r =
+          name === 'timestep' || name === 'resolution'
+            ? await sweep(gl, name)
+            : RIVAL_TESTS[name]
+              ? await RIVAL_TESTS[name].call(RIVAL_TESTS, gl, opts)
+              : await TESTS[name](gl, opts);
         r.wallSeconds = (performance.now() - t0) / 1000;
         log.textContent += `${name}: ${r.pass ? 'PASA' : 'FALLA'}\n${JSON.stringify(r.metrics, null, 1)}\n\n`;
         return r;
       }
-      for (const name of [...Object.keys(TESTS), 'timestep', 'resolution']) {
+      for (const name of [...Object.keys(TESTS), 'timestep', 'resolution', ...RIVAL_TEST_NAMES]) {
         const b = document.createElement('button');
         b.textContent = name;
         b.onclick = () => run(name);
