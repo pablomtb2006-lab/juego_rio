@@ -455,6 +455,44 @@
   letter-spacing: 1.5px;
   opacity: 0.75;
 }
+/* the next world (game/biomes.js): the island is a different place every match, and the
+   lobby says which one before you press play */
+.mode--world {
+  position: relative;
+  box-shadow: inset 0 0 0 2px var(--c, rgba(140, 200, 255, 0.25)), 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+.mode--world .mode__ic {
+  background: linear-gradient(180deg, var(--c, var(--cyan)), rgba(0, 0, 0, 0.35));
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 0 14px var(--c, transparent);
+}
+.mode--world b { color: #fff; }
+.mode--world small { color: var(--c, #cfe9ff); opacity: 0.95; }
+.mode__rec {
+  position: absolute;
+  top: -9px;
+  right: 14px;
+  transform: skewX(9deg);
+  padding: 2px 7px 3px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #cfe9ff;
+  font: 900 9px/1 var(--font-ui);
+  letter-spacing: 1.4px;
+}
+.mode__rec.is-new { background: var(--yellow, #ffd23f); color: #2b1d00; }
+.mode__rec.is-won { background: rgba(77, 220, 122, 0.9); color: #04240f; }
+.mode__tag {
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  transform: skewX(9deg);
+  padding: 2px 7px 3px;
+  border-radius: 5px;
+  background: var(--c, var(--cyan));
+  color: #06202e;
+  font: 900 9px/1 var(--font-ui);
+  letter-spacing: 1.4px;
+}
 .btn--play {
   min-height: 92px;
   font-size: 54px;

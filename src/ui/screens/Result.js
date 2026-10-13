@@ -170,6 +170,7 @@ export class Result {
       objectives: this.ui.ctx.game.objectives?.claim() ?? 0,
       objectivesDone: this.ui.ctx.game.objectives?.doneCount ?? 0,
       duration: s.time,
+      biome: this.ui.ctx.game.biome?.id ?? null,
     });
     ads.noteMatchEnd({ won: s.outcome === 'win' && s.place === 1 });
     this.showRewards();

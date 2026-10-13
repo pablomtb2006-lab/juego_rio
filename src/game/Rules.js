@@ -202,7 +202,7 @@ export class Rules {
 
       // tributaries: flowing down a big valley gathers its runoff (main rivers swell)
       const ch = hydro.channelAt(s.pos.x, s.pos.z);
-      const inflow = RULES.inflow * Math.pow(Math.max(0, (ch - RULES.inflowFrom) / (1 - RULES.inflowFrom)), 1.5);
+      const inflow = RULES.inflow * (game.biome?.inflow ?? 1) * Math.pow(Math.max(0, (ch - RULES.inflowFrom) / (1 - RULES.inflowFrom)), 1.5);
       s.inflow = inflow;
       if (inflow > 0) s.addVolume(inflow * dt);
 
@@ -210,7 +210,7 @@ export class Rules {
       const stagnant = s.flowSpeed < 12 ? RULES.stagnantMul : 1;
       // leading costs you: the front runner bakes in the sun, so a lead is never safe
       const lead = s.livePlace === 1 ? RULES.leaderEvap : 1;
-      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * lead * (s.hazardEvap || 1) * (s.catEvap || 1) * (s.evapMul || 1) * (s.isPlayer ? game.difficulty?.playerEvap ?? 1 : 1) * dt);
+      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * lead * (s.hazardEvap || 1) * (s.catEvap || 1) * (game.biome?.evap ?? 1) * (s.evapMul || 1) * (s.isPlayer ? game.difficulty?.playerEvap ?? 1 : 1) * dt);
       if (s.volume < RULES.dryLimit) {
         this.eliminate(s, null, 'dried', 'dried');
         continue;

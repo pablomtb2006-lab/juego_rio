@@ -28,6 +28,8 @@ const VEC4_UNIFORMS = ['uAtmoFog', 'uAtmoMisc', 'uCloudShadowParams', 'uCloudSha
  * Moods switch automatically from bus events (menu → late afternoon, match → day,
  * win → golden hour) unless `atmosphere.autoMood = false`.
  */
+const _tint = new THREE.Color();
+
 export class Atmosphere {
   constructor(ctx) {
     this.ctx = ctx;
@@ -118,10 +120,10 @@ export class Atmosphere {
         this.setMood('menu', 1.5);
         this.restoreColumn();
       } else if (state === 'drop') {
-        this.setMood('day', 2);
+        this.setTimeOfDay(ctx.game?.biome?.tod ?? MOODS.day, 2);
         const p = ctx.game?.player;
         if (p) this.clearColumn(p.pos.x, p.pos.z, 900);
-      } else if (state === 'stream') this.setMood('day', 2);
+      } else if (state === 'stream') this.setTimeOfDay(ctx.game?.biome?.tod ?? MOODS.day, 2);
     });
     ctx.bus?.on('matchEnd', ({ outcome }) => {
       if (!this.autoMood) return;
@@ -293,6 +295,16 @@ export class Atmosphere {
   applyTimeOfDay(t) {
     this.tod = t;
     const s = sampleTimeOfDay(t, this.state);
+    // el bioma de la partida (game/biomes.js): the sky, the fog and the haze are pulled toward
+    // the biome's colour, so a frozen island does not sit under a summer sky
+    const b = this.ctx.game?.biome;
+    if (b?.tintAmt) {
+      _tint.set(b.tint);
+      const k = b.tintAmt * 0.55;
+      for (const key of ['fog', 'horizon', 'zenith', 'glow', 'skyAmb', 'groundAmb']) s[key]?.lerp(_tint, k);
+      s.sunI *= b.bright ?? 1;
+      if (b.sat !== undefined) s.grade.sat *= 0.45 + 0.55 * b.sat;
+    }
     const u = this.uniforms;
     const el = THREE.MathUtils.degToRad(s.elev);
     const az = THREE.MathUtils.degToRad(s.az);

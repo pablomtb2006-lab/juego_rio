@@ -92,7 +92,7 @@ export class Lobby {
       </div>
 
       <div class="lobby__play">
-        <div class="mode"><span class="mode__ic">${icon('streams')}</span><span><b data-i18n="lobby.mode"></b><small data-i18n="lobby.modeSub"></small></span></div>
+        <div class="mode mode--world" data-ref="world"><span class="mode__ic" data-ref="worldIc">🌤️</span><span><b data-ref="worldName"></b><small data-ref="worldSub"></small></span><em class="mode__tag" data-i18n="lobby.world"></em><em class="mode__rec" data-ref="worldRec"></em></div>
         <button class="btn btn--yellow btn--play" type="button" data-ref="play"><span class="btn__in">${icon('play')}<span data-i18n="lobby.play"></span></span></button>
       </div>
 
@@ -129,6 +129,25 @@ export class Lobby {
       r.skinRarity.textContent = t(`rarity.${skin.rarity}`);
       r.skinRarity.className = `rtag rtag--${skin.rarity}`;
     }
+    // EL PRÓXIMO MUNDO (game/biomes.js): what you are about to drop into, before you press play
+    const game = this.ui.ctx.game;
+    const b = game?.nextBiome ?? game?.rollNext?.();
+    if (b) {
+      r.world.style.setProperty('--c', `#${(b.tint ?? 0xffffff).toString(16).padStart(6, '0')}`);
+      r.worldIc.textContent = b.icon;
+      r.worldName.textContent = t(`bio.${b.id}`);
+      r.worldSub.textContent = t(`bio.${b.id}Sub`);
+      // your record in THIS world: six of them, and a world you have never won is a reason to play
+      const w = economy.stats.worlds?.[b.id];
+      r.worldRec.textContent = !w || !w.played
+        ? t('lobby.worldNew')
+        : w.wins > 0
+          ? t('lobby.worldWins', { d: w.wins })
+          : t('lobby.worldBest', { d: w.best });
+      r.worldRec.classList.toggle('is-new', !w || !w.played);
+      r.worldRec.classList.toggle('is-won', !!w && w.wins > 0);
+    }
+
     const s = economy.stats;
     r.wins.textContent = fmtInt(s.wins);
     r.matches.textContent = fmtInt(s.matches);

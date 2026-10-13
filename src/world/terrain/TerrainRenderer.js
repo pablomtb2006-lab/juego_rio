@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { DETAIL_MAX } from './detail.js';
 import { createTerrainTextures } from './TerrainTextures.js';
 import { TERRAIN_VERTEX_PARS, TERRAIN_FRAGMENT_PARS, TERRAIN_FRAGMENT_MAIN } from './terrainShader.js';
+import { BIOME_UNIFORMS } from '../../game/biomes.js';
 
 /**
  * Draws ctx.terrain with CDLOD (continuous distance-dependent LOD, Strugar 2010):
@@ -59,6 +60,7 @@ export class TerrainRenderer {
       uLodR0: { value: this.ranges[0] },
       uPatchN: { value: this.patchN },
       uTime: { value: 0 },
+      ...BIOME_UNIFORMS, // game/biomes.js — same objects, so a new match re-colours the island
     };
     this.uniforms = uniforms;
     const defines = { TERRAIN_HQ: q.name === 'high' || q.name === 'ultra' ? 1 : 0 };

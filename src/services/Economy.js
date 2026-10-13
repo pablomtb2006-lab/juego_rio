@@ -48,6 +48,9 @@ export class Economy {
       totalLitres: 0,
       cuts: 0,
       eliminations: 0,
+      // per-world record (game/biomes.js): { <biomeId>: { played, wins, best } }. Six worlds
+      // to conquer is a reason to press play on a world you have not beaten yet.
+      worlds: {},
       ...(storage.get('stats', {}) ?? {}),
     };
     this.daily = { last: null, streak: 0, ...(storage.get('daily', {}) ?? {}) };
@@ -112,10 +115,10 @@ export class Economy {
   }
 
   /** Grant the match reward, update stats; call exactly once per match. */
-  settleMatch({ outcome, place, total = 16, peakVolume = 0, cuts = 0, eliminations = 0, objectives = 0, objectivesDone = 0, duration = 0 }) {
+  settleMatch({ outcome, place, total = 16, peakVolume = 0, cuts = 0, eliminations = 0, objectives = 0, objectivesDone = 0, duration = 0, biome = null }) {
     const result = this.breakdown({ outcome, place, total, peakVolume, cuts, eliminations, objectives, objectivesDone });
     if (result.items.some((i) => i.key === 'firstWin')) this.flags.firstWinDay = dayKey();
-    this.recordMatch(place, { outcome, peakVolume, cuts, eliminations, duration }, false);
+    this.recordMatch(place, { outcome, peakVolume, cuts, eliminations, duration, biome }, false);
     this.grant(result.total, 'match');
     return result;
   }
@@ -140,6 +143,13 @@ export class Economy {
     s.totalLitres += Math.round(extra.peakVolume ?? 0);
     s.cuts += extra.cuts ?? 0;
     s.eliminations += extra.eliminations ?? 0;
+    if (extra.biome) {
+      s.worlds = s.worlds ?? {};
+      const w = (s.worlds[extra.biome] = s.worlds[extra.biome] ?? { played: 0, wins: 0, best: 99 });
+      w.played++;
+      if (won) w.wins++;
+      if (place > 0) w.best = Math.min(w.best, place);
+    }
     if (save) {
       this.save();
       this.emit('stats');

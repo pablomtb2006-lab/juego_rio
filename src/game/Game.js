@@ -6,6 +6,7 @@ import { difficultyFor, FULL_DIFFICULTY } from './difficulty.js';
 import { Objectives } from './Objectives.js';
 import { Drought } from './Drought.js';
 import { Catastrophe } from './Catastrophe.js';
+import { biomeFor, applyBiomeUniforms, BIOMES } from './biomes.js';
 import { Forks } from './Forks.js';
 import { Hazards } from './Hazards.js';
 import { getLang } from '../ui/i18n.js';
@@ -154,7 +155,20 @@ export class Game {
     this.pendingEnd = { outcome, t: RULES.resultDelay };
   }
 
-  startMatch({ seed = this.ctx.params.seed + (Date.now() % 1000), skin, intro = true, difficulty } = {}) {
+  /**
+   * The next match's seed, rolled in advance. That is what lets the lobby say "the next world
+   * is the frozen valley" — knowing what you are about to drop into is half the reason to
+   * press play again.
+   */
+  rollNext() {
+    this.nextSeed = (this.ctx.params.seed + Math.floor(Math.random() * 1e6)) >>> 0;
+    this.nextBiome = biomeFor(mulberry32(this.nextSeed));
+    return this.nextBiome;
+  }
+
+  startMatch(opts0 = {}) {
+    if (this.nextSeed === undefined) this.rollNext();
+    const { seed = this.nextSeed, skin, intro = true, difficulty } = opts0;
     this.ensureWorldData();
     const { world, terrain, services } = this.ctx;
     world.reset();
@@ -171,6 +185,13 @@ export class Game {
     this._tags.clear();
     const rand = mulberry32(seed);
     this.rand = rand;
+    // EL BIOMA DE LA PARTIDA (game/biomes.js): the same island, another world. Drawn first, so
+    // the traps, the sky and the physics all read the same one. It is the first thing rolled
+    // from the seed, which is why the lobby can show the next world before you press play.
+    this.biome = (opts0.biome && BIOMES[opts0.biome]) || biomeFor(mulberry32(seed));
+    applyBiomeUniforms(this.biome);
+    this.ctx.atmosphere?.setTimeOfDay?.(this.biome.tod ?? 0.5, 0);
+
     // A DIFFERENT CORNER OF THE ISLAND EVERY MATCH. The zone decides which summit you drop
     // on, which means different valleys, different forks, different dams, a different sea to
     // reach. The arch zone stays in the pool (it is the best-looking drop), it is just no
@@ -252,7 +273,8 @@ export class Game {
     this.objectives.start(seed);
     this.cameraDirector.startMatch(player, { intro });
     this.setState('drop');
-    this.ctx.services?.analytics?.track('match_start', { skin: player.skin });
+    this.ctx.services?.analytics?.track('match_start', { skin: player.skin, biome: this.biome.id });
+    this.rollNext();
   }
 
   endMatch(outcome) {

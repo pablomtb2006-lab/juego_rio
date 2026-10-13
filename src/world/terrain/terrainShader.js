@@ -5,6 +5,7 @@
 // and sea floor). Lighting, shadows and fog stay three.js' own.
 
 import * as THREE from 'three';
+import { BIOME_GRADE_GLSL } from '../../game/biomes.js';
 import { DETAIL_GLSL } from './detail.js';
 
 /** sRGB hex → linear vec3 literal. */
@@ -112,6 +113,7 @@ uniform vec4 uTerrain;
 varying vec3 vTPos;
 ${DETAIL_GLSL}
 
+${BIOME_GRADE_GLSL}
 const vec3 C_GRASS_COOL = ${lin(0x6eaa24)};
 const vec3 C_GRASS_WARM = ${lin(0x9bcb32)};
 const vec3 C_GRASS_LUSH = ${lin(0x2f7d33)};
@@ -275,6 +277,16 @@ float tAO = mix(1.0, bakedAO, 0.85);
 tAO *= mix(1.0, 0.6 + 0.4 * cav, rockAmt);
 tAO *= mix(1.0, 0.75 + 0.25 * g1.b, near * (1.0 - rockAmt));
 tAO *= 1.0 - fo * 0.25;
+
+// ---- el bioma de la partida (game/biomes.js): la misma isla, otro mundo ----
+// snow settles on anything that is not underwater and not a cliff face; the embers glow
+// where the water runs, so a lava world reads as cracked lava beds, not as a brown filter
+// the channel stays bare: snow on the riverbed would hide the one line you steer by
+float bSnow = (1.0 - sub) * (1.0 - lakeBed) * (1.0 - rockAmt * 0.45) * (1.0 - flow * 0.7)
+            * (0.55 + 0.45 * smoothstep(-60.0, 520.0, h)) * (0.75 + 0.25 * nS.r);
+float bEmber = bed * (0.6 + 0.6 * nT.r) + flow * flow * 0.35;
+col = applyBiome(col, clamp(bSnow, 0.0, 1.0), clamp(bEmber, 0.0, 1.0) * (1.0 - sub));
+tRough = mix(tRough, 0.55, uBiome.w * bSnow);
 
 diffuseColor.rgb = col;
 `;

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BIOME_UNIFORMS, BIOME_GRADE_GLSL } from '../../game/biomes.js';
 import { getFoliageAtlas } from './textures.js';
 
 /**
@@ -28,6 +29,7 @@ export const PROP_UNIFORMS = {
   uThin: { value: new THREE.Vector2(2500, 7000) }, // far thinning start / end distance
   uFocus: { value: new THREE.Vector4(0, 0, 0, 0) }, // xyz = what the camera looks at (stream head), w = on
   uOccRadius: { value: 6 },
+  ...BIOME_UNIFORMS, // game/biomes.js — the props follow the island's biome
 };
 
 /** Hook the shared sun/sky uniforms to the atmosphere ones when present (same objects). */
@@ -150,6 +152,7 @@ uniform vec3 uSunColorP;
 uniform vec3 uSkyColorP;
 uniform vec3 uMossColor;
 uniform vec3 uMossColor2;
+${BIOME_GRADE_GLSL}
 uniform float uSnowLine;
 uniform float uMossAmount;
 uniform float uSnowAmount;
@@ -238,6 +241,9 @@ const ROCK_SURFACE = /* glsl */ `
     diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.12, 1.1, 0.78), tip * 0.6);
   }
 #endif
+// el bioma de la partida (game/biomes.js): the vegetation follows the island, so a frozen
+// valley has frosted pines and a volcanic one has scorched ones — no second asset set
+diffuseColor.rgb = applyBiome(diffuseColor.rgb, 0.62, 0.0);
 `;
 
 const FOLIAGE_LIGHT = /* glsl */ `

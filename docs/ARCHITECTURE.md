@@ -73,6 +73,13 @@ objetivo del arco). Todo el que lea la zona de caída debe leer `game.dropZone`,
 El frente de lava es una recta perpendicular a `game.raceDir` que avanza: `frontGap(s)` da los
 metros que le sacas. `world/props/HazardField.js` lo dibuja con los instances que sobran.
 
+**Bioma** (`game/biomes.js`): `game.biome` (sorteado en `startMatch` antes que nada) y
+`game.nextBiome` (el de la siguiente partida, para el lobby). Cambia hora del día, tinte del suelo
+y del cielo, nieve, brasas, velo, pesos de peligros, agarre, evaporación y caudal. Todo material que
+quiera seguir el bioma hace spread de `BIOME_UNIFORMS` e incluye `BIOME_GRADE_GLSL`, y termina con
+`applyBiome(col, snowMask, emberMask)`. Nada fuera de ese archivo decide "esta partida se ve
+distinta".
+
 **Dificultad** (`game/difficulty.js`): además de la rampa de las primeras partidas, `playerShield`
 y `playerEvap` son los dos mandos invisibles que mantienen la victoria del jugador en el 30-40%.
 Nada fuera de ese archivo debe decidir "esto es más fácil porque es el jugador".

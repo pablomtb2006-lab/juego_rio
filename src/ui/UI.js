@@ -181,6 +181,13 @@ export class UI {
       vibrate(this.ctx, [60, 40, 60]);
     });
     bus.on('droughtSweep', () => this.checkAlive());
+    // EL MUNDO DE HOY (game/biomes.js): name the island you are falling into
+    bus.on('phase', ({ state }) => {
+      if (state !== 'drop') return;
+      const b = this.ctx.game.biome;
+      if (!b) return;
+      this.callouts.show(t('co.world', { name: `${b.icon} ${t(`bio.${b.id}`)}`, sub: t(`bio.${b.id}Sub`) }), { priority: 2, hold: 3 });
+    });
     // LA CATÁSTROFE (game/Catastrophe.js): announce it loudly, then say what it is doing
     bus.on('catWarn', ({ kind, seconds }) => {
       this.callouts.show(t('co.catWarn', { name: t(`cat.${kind}`), d: Math.ceil(seconds) }), { priority: 5, hold: 3.4 });

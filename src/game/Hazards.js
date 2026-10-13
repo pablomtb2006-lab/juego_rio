@@ -54,12 +54,16 @@ export class Hazards {
     const rand = mulberry32((seed >>> 0) * 7717 + 31);
     const list = [];
 
+    // the biome (game/biomes.js) decides which traps this island grows: a frozen valley is
+    // made of ice and steam, a caldera of lava and geysers
+    const bw = this.game.biome?.hazards ?? {};
+    const w = (k) => HAZARD_TYPES[k].weight * (bw[k] ?? 1);
     const pick = () => {
       let total = 0;
-      for (const k of KEYS) total += HAZARD_TYPES[k].weight;
+      for (const k of KEYS) total += w(k);
       let r = rand() * total;
       for (const k of KEYS) {
-        r -= HAZARD_TYPES[k].weight;
+        r -= w(k);
         if (r <= 0) return k;
       }
       return KEYS[0];
@@ -153,7 +157,7 @@ export class Hazards {
   /** Called by Rules for every flowing stream. */
   check(s, dt) {
     s.hazardEvap = 1;
-    s.gripMul = 1;
+    s.gripMul = this.game.biome?.grip ?? 1; // ice biome: the whole island is slippery
     s.inHazard = null;
     if (s.leaping) return; // airborne: hazards on the ground cannot touch you
     const time = this.game.time;

@@ -156,11 +156,17 @@ export class PostFX {
     const cat = ctx.game?.catastrophe;
     const catK = cat?.active ? cat.k : 0;
     const catDef = catK > 0 ? cat.def : null;
-    const veilTarget = Math.max(atmo?.cloudVeil ?? 0, blinded * 0.85, (catDef?.veil ?? 0) * catK);
+    const biome = ctx.game?.biome;
+    const inMatch = ctx.game?.state === 'drop' || ctx.game?.state === 'stream';
+    const biomeVeil = inMatch ? biome?.veil ?? 0 : 0;
+    const veilTarget = Math.max(atmo?.cloudVeil ?? 0, blinded * 0.85, (catDef?.veil ?? 0) * catK, biomeVeil);
     this.veil += (veilTarget - this.veil) * (1 - Math.exp(-dt * 6));
     if (catDef?.veil && catK > 0.01) {
       _c.set(catDef.color);
       g.get('uVeil').value.set(_c.r, _c.g, _c.b, this.veil * 0.8);
+    } else if (biomeVeil > 0.01 && biome?.tint) {
+      _c.set(biome.tint);
+      g.get('uVeil').value.set(_c.r, _c.g, _c.b, this.veil * 0.72);
     } else if (atmo?.clouds) {
       g.get('uVeil').value.set(atmo.clouds.veilColor.r, atmo.clouds.veilColor.g, atmo.clouds.veilColor.b, this.veil * 0.78);
     }

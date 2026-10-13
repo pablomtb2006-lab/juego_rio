@@ -96,7 +96,7 @@ Orden por dependencia e impacto. Cada tramo se termina, se prueba y se sube ante
 | **D** | **Catástrofe anunciada** ✅ | Un evento por carrera, anunciado con 9-13 s de cuenta atrás: avalancha de lava (frente que barre la montaña por detrás), tormenta de polvo, terremoto (rompe todas las presas), diluvio, ola de calor, granizada, eclipse. No todos castigan: el diluvio y el eclipse son los que permiten remontar |
 | **E** | **Habilidades ofensivas** | Muro, sanguijuela, sequía, niebla… con recarga, desbloqueadas por nivel; la IA también las usa |
 | **F** | **Crecimiento visible** | La estela y la ola crecen de verdad con los litros; hitos visuales al crecer |
-| **G** | **Variantes del mapa** | Hielo / lava / selva / tormenta sobre la misma geometría |
+| **G** | **Variantes del mapa** ✅ | 6 mundos sobre la misma geometría (Valle Templado, Alba Dorada, Valle Helado, La Caldera, Selva Crecida, La Tormenta): cambian hora del día, cielo, niebla, color del suelo y la vegetación, nieve, brasas, qué trampas crecen, el agarre, la evaporación y el caudal de los valles · el lobby anuncia el próximo mundo y tu récord en él |
 | **H** | **Progresión y cosméticos** | Nivel con puntos · sombreros, caras, estelas · retos diarios y semanales · racha, clasificación, mejor tiempo · botón de venganza |
 
 ---
@@ -127,6 +127,30 @@ que conduce mejor que el piloto automático y que lleva mejoras queda dentro del
 
 ---
 
+## 2.ter El bioma de la partida (contra la monotonía)
+
+La geometría de la isla no se toca: encima de ella está construido todo (hidrología, rutas,
+bifurcaciones, presas). Lo que cambia cada partida es **todo lo que ves y unas cuantas cosas que
+sientes**, y eso basta para que no sea el mismo mapa dos veces:
+
+| Mundo | Qué cambia al verlo | Qué cambia al jugarlo |
+|---|---|---|
+| 🌤️ Valle Templado | la isla de siempre | — |
+| 🌅 Alba Dorada | amanecer, sombras largas, todo ámbar | mucho sol y vapor · evaporas menos |
+| 🧊 Valle Helado | nieve por toda la montaña, color lavado, pinos escarchados | agarre ×0,74 (derrapas) · casi no te evaporas · hielo y vapor por todas partes |
+| 🌋 La Caldera | basalto quemado, brasas en el fondo de los valles, luz de atardecer | lava y géiseres · evaporación ×1,4 |
+| 🌴 Selva Crecida | verde profundo y saturado | valles ×1,18 de caudal · sumideros · húmedo |
+| ⛈️ La Tormenta | sin luz, velo de lluvia, todo gris azulado | agarre ×0,88 · ríos crecidos ×1,22 |
+
+Un solo archivo manda: `src/game/biomes.js`. Los shaders comparten `BIOME_UNIFORMS` (los mismos
+objetos), así que cambiar de mundo **no recompila nada**: se escriben tres uniforms y ya.
+
+Y el gancho: la semilla de la siguiente partida se sortea por adelantado, así que **el lobby dice
+en qué mundo vas a caer antes de darle a jugar**, con tu récord en él (`SIN ESTRENAR` / `MEJOR #3` /
+`GANADO ×2`). Seis mundos que conquistar.
+
+---
+
 ## 3. Estado
 
 | Tramo | Estado |
@@ -137,5 +161,5 @@ que conduce mejor que el piloto automático y que lleva mejoras queda dentro del
 | D — Catástrofe anunciada | **hecho** |
 | E — Habilidades | pendiente |
 | F — Crecimiento visible | pendiente |
-| G — Variantes del mapa | pendiente |
+| G — Variantes del mapa | **hecho** |
 | H — Progresión y cosméticos | pendiente |
