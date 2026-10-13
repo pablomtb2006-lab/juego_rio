@@ -151,9 +151,20 @@ export class PostFX {
     // flying through a cloud: soft whiteout (HDR, before tone mapping)
     const atmo = ctx.atmosphere;
     const blinded = ctx.game?.player?.blinded ?? 0;
-    const veilTarget = Math.max(atmo?.cloudVeil ?? 0, blinded * 0.85);
+    // a catastrophe (game/Catastrophe.js) colours the whole frame: dust browns it out, a
+    // deluge greys it, an eclipse drops the exposure
+    const cat = ctx.game?.catastrophe;
+    const catK = cat?.active ? cat.k : 0;
+    const catDef = catK > 0 ? cat.def : null;
+    const veilTarget = Math.max(atmo?.cloudVeil ?? 0, blinded * 0.85, (catDef?.veil ?? 0) * catK);
     this.veil += (veilTarget - this.veil) * (1 - Math.exp(-dt * 6));
-    if (atmo?.clouds) g.get('uVeil').value.set(atmo.clouds.veilColor.r, atmo.clouds.veilColor.g, atmo.clouds.veilColor.b, this.veil * 0.78);
+    if (catDef?.veil && catK > 0.01) {
+      _c.set(catDef.color);
+      g.get('uVeil').value.set(_c.r, _c.g, _c.b, this.veil * 0.8);
+    } else if (atmo?.clouds) {
+      g.get('uVeil').value.set(atmo.clouds.veilColor.r, atmo.clouds.veilColor.g, atmo.clouds.veilColor.b, this.veil * 0.78);
+    }
+    if (catDef?.dark && st?.grade) g.get('uExposure').value = st.exposure * (1 - 0.55 * catDef.dark * catK);
 
     // impact flash / absorb pulse decay
     g.get('uFlash').value = this.flashAmt;

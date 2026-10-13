@@ -5,6 +5,7 @@ import { applyUpgrades } from './upgrades.js';
 import { difficultyFor, FULL_DIFFICULTY } from './difficulty.js';
 import { Objectives } from './Objectives.js';
 import { Drought } from './Drought.js';
+import { Catastrophe } from './Catastrophe.js';
 import { Forks } from './Forks.js';
 import { Hazards } from './Hazards.js';
 import { getLang } from '../ui/i18n.js';
@@ -22,7 +23,9 @@ import { mulberry32 } from '../core/random.js';
 import { runScenario } from './Scenarios.js';
 
 const _zero = new THREE.Vector2();
-export const RIVAL_COUNT = 23; // 24 streams: crowded valleys, more fights
+const _dir = new THREE.Vector2();
+export const RIVAL_COUNT = 15; // 16 streams: still crowded (they all take one face), but
+//                                 the field no longer wipes itself out before anyone reaches the sea
 export const DROP_ALTITUDE = 3300;
 export const START_VOLUME = 150000;
 
@@ -58,6 +61,7 @@ export class Game {
     this.cameraDirector = new CameraDirector(this);
     this.objectives = new Objectives(this);
     this.drought = new Drought(this);
+    this.catastrophe = new Catastrophe(this);
     this._tags = new Map();
 
     const bus = ctx.bus;
@@ -109,7 +113,8 @@ export class Game {
     if (this.hydro) return;
     const { terrain } = this.ctx;
     this.hydro = new Hydrology(terrain);
-    this.dropZone = computeDropZone(terrain, this.hydro, this.ctx.world?.landmarks?.arch);
+    this.startZones = computeStartZones(terrain, this.hydro, this.ctx.world?.landmarks?.arch);
+    this.dropZone = this.startZones[0];
     this.forks = new Forks(this);
     this.forks.detect();
     this.obstacles = new Obstacles(this);
@@ -166,6 +171,12 @@ export class Game {
     this._tags.clear();
     const rand = mulberry32(seed);
     this.rand = rand;
+    // A DIFFERENT CORNER OF THE ISLAND EVERY MATCH. The zone decides which summit you drop
+    // on, which means different valleys, different forks, different dams, a different sea to
+    // reach. The arch zone stays in the pool (it is the best-looking drop), it is just no
+    // longer the only one. hazards.place() runs after this, so the traps follow the zone.
+    const zones = this.startZones ?? [this.dropZone];
+    this.dropZone = zones[Math.floor(rand() * zones.length) % zones.length] ?? zones[0];
     // new players get a softer ramp over their first matches (see game/difficulty.js)
     this.difficulty = difficulty ?? (this.ctx.params.capture ? FULL_DIFFICULTY : difficultyFor(services?.economy?.stats?.matches ?? 0));
 
@@ -190,7 +201,8 @@ export class Game {
     }
 
     const zone = this.dropZone;
-    const arch = world.landmarks?.arch;
+    const arch = zone.isArch ? world.landmarks?.arch : null;
+    this.archMatch = !!arch;
     // the player starts above the summit arch on a glide line through it (fly straight = arch bonus)
     if (arch) {
       const { center, normal: n } = archGate(arch);
@@ -199,8 +211,13 @@ export class Game {
       player.pos.set(center.x + n.x * back, DROP_ALTITUDE, center.z + n.z * back);
       player.heading.set(-n.x, -n.z).normalize();
     } else {
-      player.pos.set(zone.x, DROP_ALTITUDE, zone.z);
-      player.heading.set(-zone.x, -zone.z).normalize();
+      // no arch here: drop up-slope of the summit and glide along the line the water takes,
+      // so the player lands pointing at the valley that drains this peak
+      const dir = _dir.copy(zone.dir);
+      if (dir.lengthSq() < 0.25) dir.set(-zone.x, -zone.z).normalize();
+      const back = (DROP_ALTITUDE - zone.y) * 0.29;
+      player.pos.set(zone.x - dir.x * back, DROP_ALTITUDE, zone.z - dir.y * back);
+      player.heading.copy(dir).normalize();
     }
     // Everyone races down the SAME face of the mountain: the one the player's glide line
     // points at. Rivals start spread across that face in an arc, not all around the summit,
@@ -231,6 +248,7 @@ export class Game {
     this.player = player;
     this.hazards.place(seed);
     this.drought.reset();
+    this.catastrophe.reset(seed);
     this.objectives.start(seed);
     this.cameraDirector.startMatch(player, { intro });
     this.setState('drop');
@@ -309,6 +327,7 @@ export class Game {
     }
     this.rules.update(sdt);
     this.drought.update(sdt);
+    this.catastrophe.update(sdt);
 
     if (this.pendingEnd) {
       this.pendingEnd.t -= dt;
@@ -411,6 +430,38 @@ export class Game {
   }
 }
 
+/**
+ * The candidate start zones: circles over high ground, one of which is drawn per match.
+ *
+ * Everyone in a match must land in the SAME bowl (otherwise each river takes its own
+ * drainage and nobody ever meets), but the bowl itself changes from match to match — that is
+ * what keeps the island from feeling like one memorised run. The summit arch is zone 0.
+ */
+function computeStartZones(terrain, hydro, arch) {
+  const base = computeDropZone(terrain, hydro, arch);
+  const zones = [base];
+  const peaks = terrain.peaks ?? [];
+  const top = peaks[0]?.y ?? 0;
+  const dir = new THREE.Vector2();
+  for (const p of peaks) {
+    if (zones.length >= 7) break;
+    if (p.y < top * 0.52) continue; // too low: no race left in it
+    if (zones.some((z) => Math.hypot(z.x - p.x, z.z - p.z) < 900)) continue;
+    const coast = terrain.distToSea(p.x, p.z);
+    if (!Number.isFinite(coast) || coast < 2200) continue; // too close to the sea
+    hydro.flowDirAt(p.x, p.z, dir);
+    zones.push({
+      x: p.x,
+      z: p.z,
+      y: p.y,
+      radius: Math.max(520, Math.min(880, coast * 0.3)),
+      dir: dir.clone(),
+      isArch: false,
+    });
+  }
+  return zones;
+}
+
 /** A circle over high ground where every drop must land ("land on the mountain"). */
 function computeDropZone(terrain, hydro, arch) {
   const { res, H } = hydro;
@@ -447,8 +498,15 @@ function computeDropZone(terrain, hydro, arch) {
   // nobody ever meets. The zone is centred on the summit arch (where the player drops through)
   // and kept tight on purpose.
   const radius = Math.max(600, Math.min(900, coast * 0.38));
-  if (arch) return { x: arch.position.x, z: arch.position.z, radius };
-  return { x: cx, z: cz, radius };
+  const dir = new THREE.Vector2();
+  if (arch) {
+    const ax = arch.position.x;
+    const az = arch.position.z;
+    hydro.flowDirAt(ax, az, dir);
+    return { x: ax, z: az, y: terrain.heightAt(ax, az), radius, dir: dir.clone(), isArch: true };
+  }
+  hydro.flowDirAt(cx, cz, dir);
+  return { x: cx, z: cz, y: terrain.heightAt(cx, cz), radius, dir: dir.clone(), isArch: false };
 }
 
 function fmtL(v) {

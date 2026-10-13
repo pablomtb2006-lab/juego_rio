@@ -93,11 +93,37 @@ Orden por dependencia e impacto. Cada tramo se termina, se prueba y se sube ante
 | **A** | **Que ganar sea difícil** ✅ | LA SEQUÍA: contrarreloj que seca al último cada 17 s (bajando a 8,5 s) · IA más dura que ataca al líder · el primero evapora un 45% más |
 | **B** | **Rutas libres y bifurcaciones** ✅ | Giro de 89° que suelta el agarre del valle · cruce de collados con impulso · 4 bifurcaciones señalizadas por mapa con puertas de colores y aviso en el HUD |
 | **C** | **Peligros aleatorios** ✅ | 260 peligros por partida (lava, géiseres, arena seca, sumideros, calor, hielo, rocas, vapor) colocados sobre las rutas reales del agua y amontonados en los ramales cortos · zona de caída centrada en el arco para que todos se crucen |
-| **D** | **Catástrofe anunciada** | Un evento por carrera con cuenta atrás y aviso: avalancha, tormenta de polvo, ola de calor, diluvio… |
+| **D** | **Catástrofe anunciada** ✅ | Un evento por carrera, anunciado con 9-13 s de cuenta atrás: avalancha de lava (frente que barre la montaña por detrás), tormenta de polvo, terremoto (rompe todas las presas), diluvio, ola de calor, granizada, eclipse. No todos castigan: el diluvio y el eclipse son los que permiten remontar |
 | **E** | **Habilidades ofensivas** | Muro, sanguijuela, sequía, niebla… con recarga, desbloqueadas por nivel; la IA también las usa |
 | **F** | **Crecimiento visible** | La estela y la ola crecen de verdad con los litros; hitos visuales al crecer |
 | **G** | **Variantes del mapa** | Hielo / lava / selva / tormenta sobre la misma geometría |
 | **H** | **Progresión y cosméticos** | Nivel con puntos · sombreros, caras, estelas · retos diarios y semanales · racha, clasificación, mejor tiempo · botón de venganza |
+
+---
+
+## 2.bis Equilibrio: ganar un 30-40%
+
+El objetivo no es que sea fácil, es que sea **difícil y aun así ganable**. Tres mandos invisibles
+en `src/game/difficulty.js` lo consiguen sin tocar nada de lo que el jugador ve en pantalla, y sin
+suavizar un ápice lo que los rivales se hacen entre ellos:
+
+- `playerShield` — un rival necesita ser 1,8× más grande de lo normal para cortar **al jugador**
+  (entre ellos se cortan con el margen de siempre, 1,3×).
+- `playerEvap` — el jugador se evapora un 25% más despacio.
+- `playerHazard` — las trampas del terreno le muerden un 25% menos.
+- `protectBonus` — 3 s extra de protección al aterrizar, siempre. Que te corten en el 00:50 con los
+  litros con los que empezaste es la única derrota de la que nadie vuelve.
+
+Los tres bajan con las partidas jugadas, así que el techo sube con el jugador.
+
+Y el problema de fondo: **el campo se aniquilaba antes de que nadie llegara al mar**. 16 ríos en vez
+de 24, la sequía arranca en el segundo 82 (antes 55), la evaporación sube más despacio con el reloj,
+los peligros bajan de 260 a 210 y pegan ~40% menos, y sobre todo `inflowFrom` baja de 0,35 a 0,22:
+un río que se sale del valle principal ya puede alimentarse en vez de secarse sin remedio.
+
+Medido con `node tools/dev/sim.mjs 20` (jugador en piloto automático, dificultad máxima y **sin
+mejoras compradas**): **30% de victorias**, puesto medio 5,5 de 16, partida media 123 s. Una persona
+que conduce mejor que el piloto automático y que lleva mejoras queda dentro del 30-40% pedido.
 
 ---
 
@@ -108,7 +134,7 @@ Orden por dependencia e impacto. Cada tramo se termina, se prueba y se sube ante
 | A — Dificultad y tormenta | **hecho** |
 | B — Rutas y bifurcaciones | **hecho** |
 | C — Peligros aleatorios | **hecho** |
-| D — Catástrofe anunciada | pendiente |
+| D — Catástrofe anunciada | **hecho** |
 | E — Habilidades | pendiente |
 | F — Crecimiento visible | pendiente |
 | G — Variantes del mapa | pendiente |

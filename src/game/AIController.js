@@ -501,6 +501,13 @@ export class AIController {
       this.surgeT -= dt;
       return s.volume > 120000;
     }
+    // outrunning the lava front (game/Catastrophe.js) beats any other reason to kick
+    const front = game.catastrophe?.front;
+    if (front && game.catastrophe.frontGap(s) < 500 && s.volume > 80000) {
+      this.surgeT = 2.2;
+      this.surgeCool = 0.6;
+      return true;
+    }
     if (this.surgeCool > 0 || s.volume < 150000) return false;
     let want = 0;
     if (this.goal === 'evade' && s.danger > 0.4) want = 0.9;

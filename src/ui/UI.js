@@ -181,6 +181,17 @@ export class UI {
       vibrate(this.ctx, [60, 40, 60]);
     });
     bus.on('droughtSweep', () => this.checkAlive());
+    // LA CATÁSTROFE (game/Catastrophe.js): announce it loudly, then say what it is doing
+    bus.on('catWarn', ({ kind, seconds }) => {
+      this.callouts.show(t('co.catWarn', { name: t(`cat.${kind}`), d: Math.ceil(seconds) }), { priority: 5, hold: 3.4 });
+      this.sfx('error');
+      vibrate(this.ctx, [70, 50, 70, 50, 70]);
+    });
+    bus.on('catStart', ({ kind }) => {
+      const key = `co.cat${kind[0].toUpperCase()}${kind.slice(1)}`;
+      this.callouts.show(t(key), { priority: 5, hold: 2.8 });
+      vibrate(this.ctx, [120]);
+    });
     bus.on('objective', ({ objective }) => {
       this.callouts.float(`${objective.icon} ${objective.text}`, { kind: 'gold' });
       this.toast(`${t('hud.goalDone')} +${objective.reward}`, 'gold');

@@ -34,8 +34,8 @@ if (args.shot) {
   await page.evaluate((n) => {
     for (let i = 0; i < n; i++) window.__engine.step(1);
   }, Number(args.frames ?? 2));
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: args.shot });
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: args.shot, timeout: 120000 });
   console.log('shot', args.shot);
 }
 await browser.close();

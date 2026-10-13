@@ -2,6 +2,12 @@ import { h, refs, esc, hex, fmtInt, fmtFixed, clamp } from '../util.js';
 import { t } from '../i18n.js';
 import { icon, dropIcon } from '../icons.js';
 import { rank } from './Minimap.js';
+import { HAZARD_TYPES } from '../../game/Hazards.js';
+import { CATASTROPHES } from '../../game/Catastrophe.js';
+
+const HAZARD_ICON = {
+  lava: '🌋', geyser: '💨', sand: '🏜️', sinkhole: '🕳️', sun: '☀️', ice: '🧊', rocks: '🪨', steam: '♨️',
+};
 
 const SURGE_MIN = 20000; // StreamPhysics: surge needs volume > 20,000 L
 const LOW_WATER = 15000; // Rules: a stream dries up below 5,000 L
@@ -26,6 +32,17 @@ export class Hud {
           <div class="chip chip--place" data-ref="placeChip"><b data-ref="place">#1</b><small data-i18n="hud.place"></small></div>
         </div>
         <div class="goals" data-ref="goals"></div>
+      </div>
+      <div class="cat" data-ref="cat">
+        <i class="cat__ic" data-ref="catIc"></i>
+        <div class="cat__txt"><b data-ref="catName"></b><small data-ref="catSub"></small></div>
+        <div class="cat__bar"><i data-ref="catFill"></i></div>
+      </div>
+      <div class="danger" data-ref="danger">
+        <i class="danger__ic" data-ref="dangerIc">⚠️</i>
+        <b data-ref="dangerName"></b>
+        <small data-ref="dangerDist"></small>
+        <i class="danger__arrow" data-ref="dangerArrow">▲</i>
       </div>
       <div class="fork" data-ref="fork">
         <div class="fork__side fork__side--l" data-ref="forkL"><i>◀</i><b></b><small></small></div>
@@ -139,6 +156,66 @@ export class Hud {
     if (this.ui.ctx.params.capture) el.classList.add('is-in');
   }
 
+  /**
+   * LA CATÁSTROFE (game/Catastrophe.js): the countdown while it is announced, then a bar
+   * that empties while it runs. This banner IS the feature — an unannounced modifier is just
+   * bad luck, an announced one is a decision.
+   */
+  renderCatastrophe() {
+    const c = this.ui.ctx.game.catastrophe;
+    const r = this.r;
+    const on = !!c && (c.phase === 'warn' || c.phase === 'active');
+    r.cat.classList.toggle('is-on', on);
+    if (!on) {
+      this._catKey = null;
+      return;
+    }
+    const warn = c.phase === 'warn';
+    r.cat.classList.toggle('is-warn', warn);
+    const total = warn ? c.def.warn : c.def.duration;
+    r.catFill.style.width = `${Math.max(0, Math.min(100, (c.timeLeft / Math.max(total, 1)) * 100))}%`;
+    const key = `${c.kind}:${warn}:${Math.ceil(c.timeLeft)}`;
+    if (key === this._catKey) return;
+    this._catKey = key;
+    r.cat.style.setProperty('--c', hex(CATASTROPHES[c.kind].color));
+    r.catIc.textContent = CATASTROPHES[c.kind].icon;
+    r.catName.textContent = t(`cat.${c.kind}`);
+    r.catSub.textContent = warn
+      ? t('cat.in', { d: Math.max(0, Math.ceil(c.timeLeft)) })
+      : t('cat.left', { d: Math.max(0, Math.ceil(c.timeLeft)) });
+  }
+
+  /**
+   * PELIGRO ADELANTE — the nearest hazard on your line, named and measured while you can
+   * still do something about it. The arrow says which way to lean to miss it.
+   */
+  renderDanger() {
+    const game = this.ui.ctx.game;
+    const p = game.player;
+    const blind = game.catastrophe?.active && game.catastrophe.def.hideWarnings;
+    const hz = p?.phase === 'flow' && game.state === 'stream' && !blind ? game.hazards?.ahead(p, 320) : null;
+    const r = this.r;
+    r.danger.classList.toggle('is-on', !!hz);
+    if (!hz) {
+      this._dangerKey = null;
+      return;
+    }
+    const d = Math.hypot(hz.x - p.pos.x, hz.z - p.pos.z);
+    r.danger.classList.toggle('is-close', d < 120);
+    const key = `${hz.id}:${Math.round(d / 10)}`;
+    if (key === this._dangerKey) return;
+    this._dangerKey = key;
+    const T = HAZARD_TYPES[hz.kind];
+    r.danger.style.setProperty('--c', hex(T.color));
+    r.dangerIc.textContent = HAZARD_ICON[hz.kind] ?? '⚠️';
+    r.dangerName.textContent = t(`hzn.${hz.kind}`);
+    r.dangerDist.textContent = `${Math.round(d)} m`;
+    // sign of the cross product: positive → the hazard is to your right, so lean left
+    const side = (hz.x - p.pos.x) * p.heading.y - (hz.z - p.pos.z) * p.heading.x;
+    r.dangerArrow.textContent = side > 0 ? '◀' : '▶';
+    r.dangerArrow.style.setProperty('--a', '0deg');
+  }
+
   /** The fork prompt (game/Forks.js): which way out is which, shown on the side it is on. */
   renderFork() {
     const game = this.ui.ctx.game;
@@ -207,6 +284,8 @@ export class Hud {
     this.renderGoals();
     this.renderDrought();
     this.renderFork();
+    this.renderDanger();
+    this.renderCatastrophe();
 
     // --- distance & litres (top centre, like the trailer) ---
     let dist = p.phase === 'drop' ? terrain.distToSea(p.pos.x, p.pos.z) : p.distToSea;

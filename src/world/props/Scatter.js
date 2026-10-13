@@ -192,7 +192,9 @@ export function scatterProps(terrain, { density = 1, seed = 7, treeNames, rockNa
       const autumn = veg ? sstep(0.3, 0.62, fbm(nAutumn, xc / 650, zc / 650, 2)) * 0.55 : 0;
 
       // --- trees -------------------------------------------------------------
-      const dTree = (maxTrees * forest * (1 - 0.7 * clear) + 0.05 * density) * alt * slopeOK * coastOK * (1 - 0.5 * chan);
+      // The river corridor stays OPEN. Trees along the channel are what made the traps
+      // invisible: you cannot dodge a lava field you only see when you are inside it.
+      const dTree = (maxTrees * forest * (1 - 0.7 * clear) + 0.05 * density) * alt * slopeOK * coastOK * (1 - 0.95 * chan) * (1 - 0.45 * valley);
       let nT = Math.floor(dTree + rand());
       for (let t = 0; t < nT; t++) {
         const x = x0 + rand() * STEP;
@@ -201,6 +203,10 @@ export function scatterProps(terrain, { density = 1, seed = 7, treeNames, rockNa
         if (y < 3) continue;
         const w = waterAt(x, z, y);
         if (w.wet) continue;
+        // per-tree, not per-cell: nothing grows in the channel the water runs down, so the
+        // view down the valley is clear all the way to the next bend
+        const tf = terrain.flowAt(x, z);
+        if (tf > 0.5 && rand() < sstep(0.5, 0.78, tf)) continue;
         const hr = y / hMax;
         const mix = nMix(x / 180, z / 180) * 0.5 + 0.5;
         const wPine = 0.25 + 1.1 * sstep(0.1, 0.34, hr) + 0.45 * valley + 0.3 * mix;
@@ -210,7 +216,7 @@ export function scatterProps(terrain, { density = 1, seed = 7, treeNames, rockNa
         let r = rand() * (wPine + wBroad + wAut + wBirch);
         const treeShrink = 0.7 + 0.3 * (1 - sstep(0.36, 0.56, hr));
         // tall forests, tallest along the valleys the rivers run down
-        const sc = (1.05 + rand() * 0.65) * treeShrink * (1 + 0.35 * valley);
+        const sc = (1.05 + rand() * 0.65) * treeShrink * (1 + 0.35 * valley) * (1 - 0.3 * sstep(0.3, 0.62, tf));
         if ((r -= wPine) < 0 && pines.length) placeTree(pick(pines), x, z, y - 0.3, sc, pick(PALETTE.pine), 0.04);
         else if ((r -= wBroad) < 0 && broads.length) placeTree(pick(broads), x, z, y - 0.3, sc * 1.05, pick(PALETTE.broad));
         else if ((r -= wAut) < 0 && broads.length) placeTree(pick(broads), x, z, y - 0.3, sc * 1.0, pick(PALETTE.autumn));

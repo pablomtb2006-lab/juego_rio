@@ -58,6 +58,24 @@ usan `scene.fog` (el dueño de render puede parchear `THREE.ShaderChunk.fog_*` p
 | `leap` / `leapLanded` | `{ stream }` / `{ stream, impact }` — salto (E / J / botón SALTO) |
 | `damBreak` | `{ dam, stream, bonus }` — presa rota (game/Obstacles.js) |
 | `damBlocked` | `{ dam, stream }` — un río pequeño choca con una presa |
+| `droughtStart` / `droughtWarn` / `droughtSweep` | `{}` / `{ victim, seconds }` / `{ victim }` — la sequía (game/Drought.js) |
+| `hazardHit` | `{ stream, hazard, kind }` — peligro del terreno (game/Hazards.js) |
+| `catWarn` / `catStart` / `catEnd` | `{ kind, seconds }` / `{ kind }` / `{ kind }` — la catástrofe anunciada (game/Catastrophe.js) |
+
+**Zonas de salida** (`game.startZones`, `game.dropZone`): `{ x, z, y, radius, dir: Vector2, isArch }`.
+Se calculan una vez sobre las cumbres de la isla y se sortea una por partida, así que cada carrera
+baja por una ladera distinta. `game.archMatch` dice si esta partida cae por el arco (plano de intro,
+objetivo del arco). Todo el que lea la zona de caída debe leer `game.dropZone`, nunca el arco.
+
+**Catástrofe** (`game/Catastrophe.js`): una por carrera, anunciada antes de caer.
+`catastrophe.phase ('idle'|'warn'|'active'|'done'), .kind, .def, .timeLeft, .k (0..1), .front`,
+`check(stream, dt)` lo llama `Rules` justo después de los peligros y escribe `s.catEvap`.
+El frente de lava es una recta perpendicular a `game.raceDir` que avanza: `frontGap(s)` da los
+metros que le sacas. `world/props/HazardField.js` lo dibuja con los instances que sobran.
+
+**Dificultad** (`game/difficulty.js`): además de la rampa de las primeras partidas, `playerShield`
+y `playerEvap` son los dos mandos invisibles que mantienen la victoria del jugador en el 30-40%.
+Nada fuera de ese archivo debe decidir "esto es más fácil porque es el jugador".
 
 **Progresión**: `game/upgrades.js` (`UPGRADES`, `applyUpgrades`) + `economy.upgrades`, `economy.buyUpgrade(id)`;
 pantalla `ui/screens/Upgrades.js`. Las mejoras solo se aplican al jugador.

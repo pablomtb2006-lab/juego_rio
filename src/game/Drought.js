@@ -18,9 +18,9 @@
  *   'droughtSweep' { victim }            the moment it takes someone
  */
 export const DROUGHT = {
-  grace: 55, // seconds after the match starts before the first sweep
-  interval: 24, // seconds between sweeps at the start
-  minInterval: 13, // …shrinking to this as the field thins
+  grace: 82, // seconds after the match starts before the first sweep
+  interval: 30, // seconds between sweeps at the start
+  minInterval: 17, // …shrinking to this as the field thins
   warnAt: 5, // seconds before a sweep that the warning fires
   minAlive: 2, // never sweep the last survivor
   safeAfterLanding: 6, // a stream that just landed cannot be the victim yet

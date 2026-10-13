@@ -22,11 +22,13 @@ import { archGate } from './arch.js';
 export const RULES = {
   absorbK: { lake: 150, puddle: 220, cloud: 90 }, // litres gained overall = min(maxVolume, K·√maxVolume)
   swallowTime: { lake: 3.4, puddle: 1.1, cloud: 1.0 },
-  inflow: 52000, // L/s gathered on the biggest rivers (scaled by how much of a valley floor you're on)
-  inflowFrom: 0.35, //   channel strength (0..1) below which there's nothing to gather
+  inflow: 62000, // L/s gathered on the biggest rivers (scaled by how much of a valley floor you're on)
+  inflowFrom: 0.22, //   channel strength (0..1) below which there's nothing to gather. Low on
+  //                       purpose: a river that drifts off the main valley must still be able to
+  //                       feed itself, or the whole field dries up before anyone reaches the sea
   drainRatio: 1.4, // wakes / captures / bumps only drain when the other river is clearly bigger
-  evapBase: 0.0024, // fraction of volume per second
-  evapRamp: 0.000022, // extra per second of match time (the drought tightens)
+  evapBase: 0.0019, // fraction of volume per second
+  evapRamp: 0.000015, // extra per second of match time (the drought tightens)
   stagnantMul: 1.7, // slow water evaporates faster
   dryLimit: 9000,
   ratio: 1.3, // "bigger" means at least 15% more water
@@ -133,8 +135,16 @@ export class Rules {
     return Math.ceil((o.radius * 2.2 + 6) / 4);
   }
 
+  /**
+   * How much bigger `victim`'s attacker has to be before it may cut, drain or shoulder it.
+   * The player gets a wider margin (difficulty.playerShield) — see game/difficulty.js.
+   */
+  ratioAgainst(victim) {
+    return victim.isPlayer ? RULES.ratio * (this.game.difficulty?.playerShield ?? 1) : RULES.ratio;
+  }
+
   isBigger(a, b) {
-    return a.volume >= b.volume * RULES.ratio;
+    return a.volume >= b.volume * this.ratioAgainst(b);
   }
 
   /** 0..1 how "live" channel point i of stream o is (1 near the head, 0 on the old riverbed). */
@@ -200,7 +210,7 @@ export class Rules {
       const stagnant = s.flowSpeed < 12 ? RULES.stagnantMul : 1;
       // leading costs you: the front runner bakes in the sun, so a lead is never safe
       const lead = s.livePlace === 1 ? RULES.leaderEvap : 1;
-      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * lead * (s.hazardEvap || 1) * (s.evapMul || 1) * dt);
+      s.addVolume(-s.volume * (RULES.evapBase + RULES.evapRamp * game.time) * stagnant * lead * (s.hazardEvap || 1) * (s.catEvap || 1) * (s.evapMul || 1) * (s.isPlayer ? game.difficulty?.playerEvap ?? 1 : 1) * dt);
       if (s.volume < RULES.dryLimit) {
         this.eliminate(s, null, 'dried', 'dried');
         continue;
@@ -208,6 +218,7 @@ export class Rules {
 
       game.obstacles?.check(s, dt);
       game.hazards?.check(s, dt);
+      game.catastrophe?.check(s, dt);
       if (s.blinded) s.blinded = Math.max(0, s.blinded - dt * 1.6);
       if (s.leaping) continue; // airborne: rivers below can't block you
       this.channels(s, dt);
@@ -310,7 +321,7 @@ export class Rules {
     for (const [o, c] of contacts) {
       if (s.protectedFor > 0) break;
       if (c.cv <= 0) continue;
-      if (s.volume >= c.cv * RULES.ratio) {
+      if (s.volume >= c.cv * this.ratioAgainst(o)) {
         // crossing (not running along) a smaller river cuts it off
         const along = this.alongness(o, c.i, s);
         const key = `${s.id}:${o.id}`;
@@ -324,7 +335,7 @@ export class Rules {
           o.lastHitAt = game.time;
           if (o.volume < RULES.dryLimit) this.eliminate(o, s, 'blocked', 'captured');
         }
-      } else if (c.cv >= s.volume * RULES.ratio && o.protectedFor <= 0) {
+      } else if (c.cv >= s.volume * this.ratioAgainst(s) && o.protectedFor <= 0) {
         if (this.alongness(o, c.i, s) >= RULES.crossCos) {
           // caught in a bigger river's wake: it drains you, get out
           if (c.cv < s.volume * RULES.drainRatio) continue;
@@ -475,7 +486,7 @@ export class Rules {
       this.grid.query(qx, qz, r + 30, (o, i) => {
         if (o === s || o.phase !== 'flow' || !this.isBigger(o, s)) return;
         if (i >= o.trail.count - this.headSkip(o) || i < o.trail.liveFrom) return;
-        if (this.channelVolume(o, i) < s.volume * RULES.ratio) return;
+        if (this.channelVolume(o, i) < s.volume * this.ratioAgainst(s)) return;
         const d = o.trail.data;
         const dx = d[i * 4] - qx;
         const dz = d[i * 4 + 2] - qz;

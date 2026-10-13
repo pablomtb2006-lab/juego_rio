@@ -187,7 +187,50 @@ export class HazardField {
     }
     this.info.needsUpdate = true;
     this.phase.needsUpdate = true;
+    this.hazCount = n;
     this.mesh.geometry.instanceCount = n;
+  }
+
+  /**
+   * The lava front of game/Catastrophe.js, drawn as a line of overlapping lava discs in the
+   * instances left over above the hazard list — same shader, same terrain hugging, no extra
+   * draw call. Only the slots over land are filled, so the sea stays clean.
+   */
+  syncFront() {
+    const cat = this.ctx.game?.catastrophe;
+    const front = cat?.active ? cat.front : null;
+    const base = this.hazCount ?? 0;
+    const room = this.cap - base;
+    if (!front || room <= 0) {
+      if (this._frontN) {
+        this._frontN = 0;
+        this.mesh.geometry.instanceCount = base;
+      }
+      return;
+    }
+    const { terrain } = this.ctx;
+    const d = front.dir;
+    const px = -d.y;
+    const pz = d.x;
+    const R = 150;
+    const step = R * 1.25;
+    const cx = d.x * front.at;
+    const cz = d.y * front.at;
+    let k = 0;
+    for (let i = -Math.floor(room / 2); k < room && i <= Math.floor(room / 2); i++) {
+      const u = i * step;
+      const x = cx + px * u;
+      const z = cz + pz * u;
+      if (!terrain.isLand(x, z)) continue;
+      const j = base + k;
+      this.info.setXYZW(j, x, z, R, 0); // kind 0 = lava
+      this.phase.setXY(j, (i * 0.37) % 1, 5);
+      k++;
+    }
+    this._frontN = k;
+    this.info.needsUpdate = true;
+    this.phase.needsUpdate = true;
+    this.mesh.geometry.instanceCount = base + k;
   }
 
   update() {
@@ -196,5 +239,6 @@ export class HazardField {
       this.build();
     }
     this.sync();
+    this.syncFront();
   }
 }

@@ -260,6 +260,24 @@ export class Obstacles {
     }
   }
 
+  /** The earthquake (game/Catastrophe.js): every dam on the island gives way at once. */
+  breakAll() {
+    const { bus } = this.ctx;
+    for (const d of this.dams) {
+      if (d.broken) continue;
+      d.broken = true;
+      d.brokenAt = this.game.time;
+      bus.emit('splash', { x: d.x, y: d.y + 2, z: d.z, size: d.width * 0.5, kind: 'clash' });
+    }
+    for (const log of this.logs) {
+      if (!log.dam) continue;
+      log.vel.set((Math.random() - 0.5) * 22, 12 + Math.random() * 18, (Math.random() - 0.5) * 22);
+      log.spin.set((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 5);
+      log.t = 0;
+      this.flying.push(log);
+    }
+  }
+
   breakDam(d, s) {
     d.broken = true;
     d.brokenAt = this.game.time;

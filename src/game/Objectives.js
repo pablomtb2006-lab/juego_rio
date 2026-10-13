@@ -107,7 +107,8 @@ export class Objectives {
     const tier = tierFor(matches);
     const es = (this.game.ctx.ui?.lang ?? 'es') === 'es';
     const rand = mulberry32((seed >>> 0) + matches * 7919);
-    const pool = [...POOL];
+    // the arch goal only exists on matches that actually drop through the arch
+    const pool = POOL.filter((p) => p.id !== 'arch' || this.game.archMatch);
     // the very first matches always include "reach the sea" so the goal of the game is explicit
     const picked = [];
     if (matches < 2) picked.push(pool.splice(pool.findIndex((p) => p.id === 'sea'), 1)[0]);

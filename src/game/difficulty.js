@@ -25,6 +25,9 @@ const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
  *   dropNearPlayer: number, // how strongly bots aim their landing at the player
  *   protectBonus: number, // extra seconds of post-landing protection
  *   damMul: number,       // multiplier on dam strength (weaker dams at first)
+ *   playerShield: number, // extra margin a rival needs before it can cut the PLAYER
+ *   playerEvap: number,   // multiplier on the player's own evaporation
+ *   playerHazard: number, // multiplier on what the terrain's traps take off the player
  * }}
  */
 export function difficultyFor(matches = 0) {
@@ -32,13 +35,23 @@ export function difficultyFor(matches = 0) {
   return {
     level,
     isFirst: matches <= 0,
-    aiSkill: 0.84 + 0.16 * level,
+    aiSkill: 0.82 + 0.13 * level,
     aggression: level * level, // bullies stay off until the player has a few matches in
     caution: 1 + (1 - level) * 0.8,
     huntPlayer: level >= 0.6,
     dropNearPlayer: 0.35 + 0.65 * level,
-    protectBonus: (1 - level) * 7,
+    // the player always gets a few extra seconds after landing: being cut at 00:50 with the
+    // litres you started with is the one defeat nobody comes back from
+    protectBonus: 3 + (1 - level) * 5,
     damMul: 0.6 + 0.4 * level,
+    // The two knobs that make a hard game winnable. A rival has to be clearly bigger before
+    // it may cut the PLAYER (rivals cut each other at the plain RULES.ratio), and the player
+    // bakes a little slower in the sun. Both are invisible on screen on purpose: the game has
+    // to FEEL like the brutal one the rivals are playing, while actually giving you the
+    // ~1-in-3 you need to keep pressing "again".
+    playerShield: 2.3 - 0.5 * level,
+    playerEvap: 0.7 + 0.05 * level,
+    playerHazard: 0.6 + 0.15 * level,
   };
 }
 

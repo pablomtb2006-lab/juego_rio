@@ -115,7 +115,7 @@ export class CameraDirector {
     this.archShown = false;
     this.trauma = 0;
     this.spectateTarget = null;
-    this.setMode(intro && this.ctx.world?.landmarks?.arch ? 'intro' : 'drop', { target: player, snap: true });
+    this.setMode(intro && this.game.archMatch && this.ctx.world?.landmarks?.arch ? 'intro' : 'drop', { target: player, snap: true });
   }
 
   shake(amount) {
@@ -343,7 +343,9 @@ export class CameraDirector {
     const r = s.radius;
     const sp = s.flowSpeed ?? s.speed;
     const speed01 = THREE.MathUtils.clamp((sp - 12) / 42, 0, 1);
-    const lookDist = THREE.MathUtils.clamp(sp * 0.75, 22, 70) + r;
+    // Look FAR down the valley: the whole point of the chase shot is that you see the trap
+    // (a dam, a lava field, a rival's channel) with enough road left to steer around it.
+    const lookDist = THREE.MathUtils.clamp(sp * 1.25, 46, 130) + r;
     const path = this.predictPath(s, lookDist + 20, 8);
     // forward = towards a point ahead on the predicted path
     const idx = Math.min(path.length - 1, Math.max(1, Math.round((lookDist * 0.65) / 8)));
@@ -359,12 +361,16 @@ export class CameraDirector {
     springS(this.s, 'swallowK', body ? 1 : 0, body ? 2.2 : 0.8, this.ctx.dt || 1 / 60);
     const sk = THREE.MathUtils.clamp(this.s.swallowK, 0, 1) * (this.swallow ? Math.min(1, this.swallow.radius / 80) : 0);
     const lakeR = this.swallow?.radius ?? 0;
-    const back = (aerial ? 46 + r * 2.4 : 11 + r * 1.45 - speed01 * 1.5) + sk * (20 + lakeR * 0.25);
-    const height = (aerial ? 22 + r * 1.3 : 3.6 + r * 0.42 - speed01 * 0.6) + sk * (22 + lakeR * 0.3);
+    // …and ride high enough to see OVER the pines that line the valley (Scatter.js keeps the
+    // channel itself clear, the camera clears the banks).
+    const back = (aerial ? 46 + r * 2.4 : 20 + r * 1.5 - speed01 * 2) + sk * (20 + lakeR * 0.25);
+    const height = (aerial ? 22 + r * 1.3 : 15 + r * 0.72 + speed01 * 3) + sk * (22 + lakeR * 0.3);
     const baseY = Math.max(s.pos.y, this.ground(s.pos.x - f.x * back, s.pos.z - f.z * back));
     this.desired.set(s.pos.x - f.x * back, baseY + height, s.pos.z - f.z * back);
-    const lp = path[Math.min(path.length - 1, Math.round(lookDist / 8))] ?? ahead;
-    this.desiredLook.set(lp.x, Math.min(lp.y, s.pos.y) + r * 0.25 + (aerial ? -8 : 0), lp.z);
+    // aim short of the far point: the camera reads the whole valley, but your own head still
+    // sits in the lower third of the frame where you can steer by it
+    const lp = path[Math.min(path.length - 1, Math.round((lookDist * 0.58) / 8))] ?? ahead;
+    this.desiredLook.set(lp.x, Math.min(lp.y, s.pos.y) + r * 0.25 + (aerial ? -8 : 6), lp.z);
     if (sk > 0.01 && this.swallow) {
       this.desiredLook.x += (this.swallow.x - this.desiredLook.x) * sk * 0.55;
       this.desiredLook.z += (this.swallow.z - this.desiredLook.z) * sk * 0.55;
@@ -537,7 +543,7 @@ export class CameraDirector {
 
   /** Will the drop pass through the summit arch within the next few seconds? */
   archTrigger(s) {
-    const arch = this.ctx.world?.landmarks?.arch;
+    const arch = this.game.archMatch ? this.ctx.world?.landmarks?.arch : null;
     if (!arch) return false;
     const { center: A, radius: R } = archGate(arch);
     const above = s.pos.y - A.y;

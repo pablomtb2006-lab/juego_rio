@@ -20,18 +20,18 @@ import { mulberry32 } from '../core/random.js';
  * Stream fields written: hazardEvap, gripMul, blinded, inHazard.
  */
 export const HAZARD_TYPES = {
-  lava: { drain: 300000, slowTo: 26, radius: [24, 42], color: 0xff5a1e, weight: 1.0, warn: 'lava' },
-  geyser: { burst: true, drain: 520000, radius: [13, 20], color: 0xdfe9ff, weight: 0.9, warn: 'geyser' },
-  sand: { drain: 95000, slowTo: 17, radius: [34, 62], color: 0xe3cf92, weight: 1.1, warn: 'sand' },
-  sinkhole: { gulp: 0.17, radius: [15, 26], color: 0x241d18, weight: 0.8, warn: 'sinkhole' },
-  sun: { evap: 3.2, radius: [55, 95], color: 0xffd98a, weight: 0.9, warn: 'sun' },
+  lava: { drain: 180000, slowTo: 26, radius: [24, 42], color: 0xff5a1e, weight: 1.0, warn: 'lava' },
+  geyser: { burst: true, drain: 300000, radius: [13, 20], color: 0xdfe9ff, weight: 0.9, warn: 'geyser' },
+  sand: { drain: 68000, slowTo: 17, radius: [34, 62], color: 0xe3cf92, weight: 1.1, warn: 'sand' },
+  sinkhole: { gulp: 0.13, radius: [15, 26], color: 0x241d18, weight: 0.8, warn: 'sinkhole' },
+  sun: { evap: 2.4, radius: [55, 95], color: 0xffd98a, weight: 0.9, warn: 'sun' },
   ice: { grip: 0.42, slowTo: 46, radius: [32, 58], color: 0xbfe8ff, weight: 0.7, warn: 'ice' },
   rocks: { slowTo: 13, radius: [22, 38], color: 0x8e8174, weight: 1.0, warn: 'rocks' },
   steam: { blind: 1, radius: [30, 52], color: 0xd8e4ec, weight: 0.6, warn: 'steam' },
 };
 
 const KEYS = Object.keys(HAZARD_TYPES);
-const COUNT = 260; // hazards placed per match (capacity of the renderer)
+const COUNT = 210; // hazards placed per match (the renderer holds 300: the rest is the lava front)
 const SHORT_SHARE = 0.3; // of them, this share is stacked on the fork short branches
 const ROUTE_SHARE = 0.85; // …and up to this share sits right on the routes water actually takes
 
@@ -168,8 +168,10 @@ export class Hazards {
       const T = HAZARD_TYPES[hz.kind];
       const live = this.activeAt(hz, time);
       if (live <= 0) continue;
-      // deeper inside hurts more
-      const bite = live * (1 - Math.sqrt(d2) / reach) ** 0.6;
+      // deeper inside hurts more — and the traps bite the player a little softer, see
+      // game/difficulty.js (the invisible half of "hard but winnable")
+      const soft = s.isPlayer ? this.game.difficulty?.playerHazard ?? 1 : 1;
+      const bite = live * (1 - Math.sqrt(d2) / reach) ** 0.6 * soft;
       s.inHazard = hz;
       if (T.drain) s.addVolume(-T.drain * bite * dt);
       if (T.evap) s.hazardEvap = Math.max(s.hazardEvap, 1 + (T.evap - 1) * bite);
