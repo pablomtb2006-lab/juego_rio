@@ -1,5 +1,5 @@
 import { RiverSimulation } from './RiverSimulation.js';
-import { RiverEcosystem } from './RiverEcosystem.js';
+import { RiverEcosystem, BODY_COHESION } from './RiverEcosystem.js';
 import { nominalDuration } from './AbsorptionSystem.js';
 import { NEUTRAL } from './RiverIdentity.js';
 
@@ -20,7 +20,8 @@ const GOLD = [1.0, 0.68, 0.1];
 
 async function scenario(gl, { rivers, neutral = [], seconds, steer, spacing = 0.15, substeps = 3, capacity = 4096, domain = { min: [-10, 0, -5], max: [10, 3, 5] }, colorPolicy = 'receptor', every = 6, until = null, onFrame = null }) {
   const sim = new RiverSimulation(gl, { capacity, domain, config: { spacing, substeps } });
-  const eco = new RiverEcosystem(sim, { rivers, neutral, colorPolicy });
+  // isolated bodies on a flat bed: body cohesion on (see RiverEcosystem); the valley runs without it
+  const eco = new RiverEcosystem(sim, { rivers, neutral, colorPolicy, cohesion: BODY_COHESION });
   eco.fill();
   const trace = [];
   let worstCount = 0;
@@ -405,6 +406,68 @@ export const RIVAL_TESTS = {
       criteria: 'every run completes with exact mass and no losses; absorption duration varies < 25 % across dt and resolution',
     };
   },
+};
+
+/**
+ * 11 — the valley: four rivers born at springs run down carved channels to the sea and meet at
+ * confluences. No body cohesion, no scripted steering: only gravity, the terrain and the
+ * absorption rule. Books every frame include springs (inflow per river) and the sea (outflow per
+ * river, counted on the GPU).
+ */
+RIVAL_TESTS.r11_valley = async function (gl, { seconds = 30, spacing = 0.19 } = {}) {
+  const { makeValley } = await import('./scenes/valley.js');
+  const V = makeValley();
+  const sim = new RiverSimulation(gl, { capacity: 8192, domain: V.domain, terrain: V.terrain, obstacles: { spheres: V.rocks }, config: { spacing, substeps: 2, iterations: 3 } });
+  const eco = new RiverEcosystem(sim, { rivers: V.rivers.map((r) => ({ ...r, personality: undefined })), sink: V.sink, absorption: V.absorption, dyeStrength: 1.6, maneuver: 3.5 });
+  eco.fill();
+  let worstCount = 0;
+  let worstBook = 0;
+  const series = [];
+  let f = 0;
+  while (eco.time < seconds - 1e-9) {
+    eco.frame(1 / 60);
+    worstCount = Math.max(worstCount, eco.checks.countError);
+    worstBook = Math.max(worstBook, eco.checks.bookError);
+    if (f % 60 === 59) series.push({ t: Math.round(eco.time), kg: eco.list.map((r) => Math.round(r.mass)), free: Math.round(eco.rivers[NEUTRAL].mass), seaKg: Math.round(eco.checks.seaOut * sim.cfg.mass) });
+    f++;
+    if (f % 20 === 0) await yieldUI();
+  }
+  const m = sim.measure();
+  // depth of the water above the ground (the old body cohesion piled water into ~1 m mounds)
+  const { pos } = sim.diagnostics.read();
+  const depth = [];
+  for (let i = 0; i < pos.length / 4; i++) {
+    const o = i * 4;
+    if (pos[o + 3] < 0 || pos[o] > 11) continue; // the sea mouth is excluded (domain floor below the terrain)
+    depth.push(pos[o + 1] - V.terrain.height(pos[o], pos[o + 2]));
+  }
+  depth.sort((a, b) => a - b);
+  const q = (x) => depth[Math.min(depth.length - 1, Math.floor(x * (depth.length - 1)))] ?? 0;
+  const events = eco.absorption.history
+    .filter((e) => e.phase !== 'rozadura')
+    .map((e) => ({ absorber: eco.rivers[e.a].name, absorbed: eco.rivers[e.b].name, ...episodeReport(e, sim.cfg) }));
+  const springs = eco.springs.map((s) => ({ spring: V.rivers[s.river].name, feeds: eco.rivers[s.owner].name, flowM3s: s.flow }));
+  const r = { worstCount, worstBook, m, eco };
+  const reassigned = springs.some((s) => s.spring !== s.feeds);
+  return {
+    pass: massOK(r) && eco.checks.seaOut > 0 && events.some((e) => e.phase === 'completa') && reassigned,
+    metrics: {
+      seconds,
+      spacing,
+      springInKg: eco.checks.springIn * sim.cfg.mass,
+      seaOutKg: eco.checks.seaOut * sim.cfg.mass,
+      inDomainKg: eco.checks.massTotal,
+      waterDepthP50: q(0.5),
+      waterDepthP99: q(0.99),
+      speedMean: m.speedMean,
+      speedMax: m.speedMax,
+      events,
+      springs,
+      series,
+      ...conservation(r),
+    },
+    criteria: 'every frame: total = initial + springs − sea and every river N(t) − N(0) = In − Out + transfers in − out (0 particles of error); water reaches the sea; at least one confluence absorption completes and its spring becomes a tributary of the absorber; nothing lost or inside solids',
+  };
 };
 
 export const RIVAL_TEST_NAMES = Object.keys(RIVAL_TESTS).filter((k) => !k.startsWith('_'));

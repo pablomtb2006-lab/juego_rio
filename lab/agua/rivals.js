@@ -1,39 +1,93 @@
 import * as THREE from 'three';
 import { nominalDuration } from '../../src/fluid/AbsorptionSystem.js';
+import { makeValley } from '../../src/fluid/scenes/valley.js';
 
 /**
- * Río Vivo — rivals mode (?modo=rivales). An open arena with a few solids, the player's river and
- * five rival rivers of different colour, mass, speed and personality, plus two puddles of free
- * water. Every river is real water of the same simulation (see docs/RIVALES.md).
+ * Río Vivo — rivals mode (?modo=rivales). A valley: four rivers are born at springs on the
+ * hillside and run down carved channels to the sea; they meet at confluences, where the larger
+ * river absorbs the smaller one (src/fluid/scenes/valley.js, docs/RIVALES.md). Every river is real
+ * water of the same simulation; nothing holds its shape but the ground.
  */
+const VALLEY = makeValley();
 export const RIVALS = {
-  domain: { min: [-14, 0, -14], max: [14, 5, 14] },
-  boxes: [
-    { center: [-4, 0.6, 0], half: [0.6, 0.6, 2.5] },
-    { center: [5, 0.5, -5], half: [1.5, 0.5, 0.5], rot: [0, 0.5, 0] },
-    { center: [5, 0.7, 6.5], half: [0.8, 0.7, 0.8], rot: [0, 0.3, 0] },
-    { center: [-7, 0.5, 6], half: [1.2, 0.5, 0.6], rot: [0, -0.4, 0] },
-    { center: [0, 0.4, -8.5], half: [2, 0.4, 0.4] },
-    { center: [10.5, 0.6, 1], half: [0.5, 0.6, 1.8] },
-  ],
-  spheres: [
-    { center: [2.5, -0.4, 1.5], radius: 1.0 },
-    { center: [-9, -0.3, -2], radius: 0.9 },
-    { center: [9, -0.3, -3], radius: 0.8 },
-  ],
-  rivers: [
-    { name: 'Tú', type: 'player', color: [0.1, 0.85, 0.8], at: [-9, -9], volume: 4, resistance: 0.4 },
-    { name: 'Voltio', color: [0.15, 0.45, 1.0], at: [9, -9], volume: 2.5, personality: 'agresivo' },
-    { name: 'Jade', color: [0.1, 0.8, 0.4], at: [8.5, 8.5], volume: 5, personality: 'territorial' },
-    { name: 'Malva', color: [0.62, 0.3, 1.0], at: [-1.5, 4.5], volume: 8, personality: 'oportunista' },
-    { name: 'Ámbar', color: [1.0, 0.68, 0.1], at: [-9, 9], volume: 1.5, personality: 'evasivo' },
-    { name: 'Coral', color: [1.0, 0.38, 0.32], at: [1.5, -3.5], volume: 3.5, personality: 'agresivo' },
-  ],
-  neutral: [
-    { at: [5.5, 0], volume: 0.4 },
-    { at: [-5.5, -4.5], volume: 0.35 },
-  ],
+  domain: VALLEY.domain,
+  terrain: VALLEY.terrain,
+  boxes: [],
+  spheres: VALLEY.rocks,
+  rivers: VALLEY.rivers,
+  neutral: [],
+  sink: VALLEY.sink,
+  absorption: VALLEY.absorption,
+  seaLevel: VALLEY.seaLevel,
+  dyeStrength: 1.6, // a tint of the water, not a paint: rivers must still look like water
+  maneuver: 3.5,
 };
+
+/** Ground, sea and banks of the valley (render only; the solver uses the analytic terrain). */
+export function addValleyMeshes(scene, T = RIVALS.terrain) {
+  const x0 = -24;
+  const x1 = 40;
+  const z0 = -22;
+  const z1 = 22;
+  const nx = 320;
+  const nz = 220;
+  const geo = new THREE.PlaneGeometry(x1 - x0, z1 - z0, nx, nz);
+  geo.rotateX(-Math.PI / 2);
+  const p = geo.attributes.position;
+  const col = new Float32Array(p.count * 3);
+  // linear colours (the compositor tone-maps): dark enough to stay saturated after ACES
+  const grass = new THREE.Color(0.075, 0.15, 0.035);
+  const dry = new THREE.Color(0.17, 0.18, 0.07);
+  const bed = new THREE.Color(0.11, 0.085, 0.06); // wet soil and gravel of the channels
+  const sand = new THREE.Color(0.42, 0.36, 0.24);
+  const rock = new THREE.Color(0.16, 0.15, 0.14);
+  const c = new THREE.Color();
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i) + (x0 + x1) / 2;
+    const z = p.getZ(i) + (z0 + z1) / 2;
+    const [h, gx, gz] = T.sample(x, z);
+    p.setXYZ(i, x, h, z);
+    const U = T.channels(x, z)[0];
+    const slope = Math.hypot(gx, gz);
+    const n = Math.sin(x * 1.7 + z * 0.9) * Math.sin(z * 2.3 - x * 0.4) * 0.5 + 0.5; // patchiness
+    c.copy(grass).lerp(dry, n * 0.45);
+    c.lerp(rock, Math.min(1, Math.max(0, (slope - 0.35) * 2.5)));
+    c.lerp(bed, Math.min(1, U * 1.25));
+    c.lerp(sand, Math.min(1, Math.max(0, (RIVALS.seaLevel + 0.45 - h) * 1.6)) * (x > 6 ? 1 : 0));
+    col.set([c.r, c.g, c.b], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  const ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }));
+  ground.receiveShadow = true;
+  ground.castShadow = true;
+  scene.add(ground);
+  const sea = new THREE.Mesh(
+    new THREE.PlaneGeometry(60, 80),
+    new THREE.MeshStandardMaterial({ color: 0x1b5d74, roughness: 0.12, metalness: 0.05, transparent: true, opacity: 0.9 }),
+  );
+  sea.rotation.x = -Math.PI / 2;
+  sea.position.set(13.2 + 30, RIVALS.seaLevel, 0);
+  scene.add(sea);
+  // the springs come out of rock outcrops (visual: the source itself is in the solver)
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0x5b5f5c, roughness: 0.95, flatShading: true });
+  for (const r of RIVALS.rivers) {
+    const [x, z] = r.spring.at;
+    const g = new THREE.IcosahedronGeometry(0.9, 1);
+    const pp = g.attributes.position;
+    for (let i = 0; i < pp.count; i++) {
+      const v = new THREE.Vector3().fromBufferAttribute(pp, i);
+      v.multiplyScalar(1 + Math.sin(v.x * 4.1 + x) * Math.cos(v.z * 3.3) * 0.12);
+      pp.setXYZ(i, v.x, v.y * 0.8, v.z);
+    }
+    g.computeVertexNormals();
+    const m = new THREE.Mesh(g, rockMat);
+    m.position.set(x - 1.0, T.height(x - 1.0, z) + 0.35, z);
+    m.castShadow = m.receiveShadow = true;
+    scene.add(m);
+  }
+  return { ground, sea };
+}
 
 const css = (c) => `rgb(${c.map((x) => Math.round(x * 255)).join(',')})`;
 const STATE_CLASS = { libre: '', agarre: 'grab', absorbiendo: 'eat', 'siendo absorbido': 'eaten', absorbido: 'dead' };

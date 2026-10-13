@@ -64,11 +64,11 @@ export class RivalAI {
     river.speedMul = this.p.speed;
   }
 
-  /** Signed clearance at a bed-level point: obstacles and arena walls (m, negative inside). */
+  /** Signed clearance at a point just above the ground: rocks, blocks and arena walls (m). */
   clearance(x, z) {
     const c = this.collision;
     const { min, max } = c.domain;
-    return Math.min(c.obstacleDistance(x, 0.3, z), x - min[0], max[0] - x, z - min[2], max[2] - z);
+    return Math.min(c.solidsDistance(x, c.groundY(x, z) + 0.3, z), x - min[0], max[0] - x, z - min[2], max[2] - z);
   }
 
   /** Repulsion from solids along the intended direction (potential field with look-ahead probes). */
@@ -207,7 +207,18 @@ export class RivalAI {
     }
     if (this.detour && t < this.detourUntil) want = norm(want[0] * 0.3 + this.detour[0], want[1] * 0.3 + this.detour[1]);
 
-    // 5. solids
+    // 5. on a hillside a river runs downhill: the AI may steer across and along the slope, never
+    // push its water uphill (that would be a pump, not a river)
+    const T = this.collision.terrain;
+    if (T) {
+      const [, gx, gz] = T.baseHeight(me.com[0], me.com[2]);
+      const [hx, hz] = norm(-gx, -gz);
+      const along = want[0] * hx + want[1] * hz;
+      if (along < 0) want = [want[0] - along * hx, want[1] - along * hz];
+      want = norm(want[0] + hx * 0.5, want[1] + hz * 0.5);
+      throttle *= 0.7;
+    }
+    // 6. solids
     const [ax, az] = this.avoid(me.com, want[0] || want[1] ? want : norm(me.vel[0], me.vel[2]), me.radius);
     const [dx, dz] = norm(want[0] + ax * 1.6, want[1] + az * 1.6);
     me.setInput(dx * throttle, dz * throttle);

@@ -30,8 +30,8 @@
    "speedClamps": 0
   },
   "criteria": "centre of mass within 0.1% of the exact discrete free fall, velocity within 0.1% of −gt, lateral drift < 1 mm (internal forces are pairwise: they cannot move the centre of mass)",
-  "wallSeconds": 1.9887999999998138,
-  "date": "2026-10-13T21:46:55.257Z",
+  "wallSeconds": 2.534299999999814,
+  "date": "2026-10-13T22:51:24.999Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "rest": {
@@ -147,8 +147,8 @@
    "speedClamps": 0
   },
   "criteria": "mass exact, nothing inside solids; |dp/dz − ρg|/ρg < 10%; mean speed < 2 cm/s; KE_end < 2% of KE_peak",
-  "wallSeconds": 50.968899999999444,
-  "date": "2026-10-13T21:47:46.233Z",
+  "wallSeconds": 93.9605,
+  "date": "2026-10-13T22:52:58.973Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "flow": {
@@ -289,8 +289,8 @@
    "speedClamps": 0
   },
   "criteria": "M_domain = M_initial + M_in − M_out exactly (relative error < 1e-9), water reaches the sink, nothing inside solids",
-  "wallSeconds": 90.50970000000018,
-  "date": "2026-10-13T21:49:16.748Z",
+  "wallSeconds": 177.7948999999999,
+  "date": "2026-10-13T22:55:56.773Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "control": {
@@ -322,8 +322,8 @@
    "speedClamps": 0
   },
   "criteria": "the force moves the water (> 0.2 m), mass is untouched, the work done is booked as external energy (> 0)",
-  "wallSeconds": 26.35609999999963,
-  "date": "2026-10-13T21:49:43.109Z",
+  "wallSeconds": 48.47,
+  "date": "2026-10-13T22:56:45.266Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "dambreak": {
@@ -352,8 +352,8 @@
    "speedClamps": 0
   },
   "criteria": "mass exact; gate depth within 15% of 4/9·H0 in the shallow-water window; front speed between 0.5 and 1.05 × 2√(gH0)",
-  "wallSeconds": 19.045,
-  "date": "2026-10-13T21:50:02.160Z",
+  "wallSeconds": 37.81969999999972,
+  "date": "2026-10-13T22:57:23.093Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "timestep": {
@@ -466,8 +466,8 @@
    "maxF": 0
   },
   "criteria": "no completed absorption, < 2 % of B transferred, mass exact",
-  "wallSeconds": 31.694800000000747,
-  "date": "2026-10-13T21:32:26.194Z",
+  "wallSeconds": 51.608600000000095,
+  "date": "2026-10-13T22:58:14.706Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r2_similar": {
@@ -673,8 +673,8 @@
    ]
   },
   "criteria": "completes; duration from end of grab to completion within 5–8 s; mass exact",
-  "wallSeconds": 64.35689999999944,
-  "date": "2026-10-13T21:33:30.565Z",
+  "wallSeconds": 109.0595,
+  "date": "2026-10-13T23:00:03.776Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r3_large": {
@@ -863,8 +863,8 @@
    ]
   },
   "criteria": "completes; duration within 1.5–3 s; mass exact",
-  "wallSeconds": 42.755299999999814,
-  "date": "2026-10-13T21:34:13.326Z",
+  "wallSeconds": 70.12229999999981,
+  "date": "2026-10-13T23:01:13.913Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r4_interrupted": {
@@ -908,8 +908,8 @@
    "maxF": 0.4954954954954955
   },
   "criteria": "episode ends as interrumpida with 0.25 ≤ f < 0.8; no transfer after the break; A = A0 + transferred and B = B0 − transferred exactly; B survives",
-  "wallSeconds": 64.6895,
-  "date": "2026-10-13T21:35:18.023Z",
+  "wallSeconds": 106.75080000000028,
+  "date": "2026-10-13T23:03:00.669Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r5_opposing": {
@@ -942,8 +942,8 @@
    "maxF": 0.3333333333333333
   },
   "criteria": "currents measured as opposed (φ_dir ≥ 1.15); progress after 1.5 s of fusion reported; mass exact",
-  "wallSeconds": 24.930200000000188,
-  "date": "2026-10-13T21:35:42.957Z",
+  "wallSeconds": 40.90809999999963,
+  "date": "2026-10-13T23:03:41.609Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r6_aligned": {
@@ -980,8 +980,8 @@
    "ratioOpposingToAligned": 1.2131147540983604
   },
   "criteria": "currents measured as aligned (φ_dir ≤ 0.85); less progress after 1.5 s than the opposing case; mass exact",
-  "wallSeconds": 30.659899999999443,
-  "date": "2026-10-13T21:36:13.621Z",
+  "wallSeconds": 51.429899999999904,
+  "date": "2026-10-13T23:04:33.043Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r7_conservation": {
@@ -1069,8 +1069,8 @@
    "maxF": 0.89171974522293
   },
   "criteria": "every frame: total particle count unchanged, every river N(t) − N(0) = Σ in − Σ out of the transfer matrix (0 particles of error), f ≤ 1, solver mass exact; the run must include at least one completed absorption and free water joining a river",
-  "wallSeconds": 84.38870000000018,
-  "date": "2026-10-13T21:46:39.480Z",
+  "wallSeconds": 143.15790000000038,
+  "date": "2026-10-13T23:06:56.207Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r8_color": {
@@ -1110,8 +1110,8 @@
    }
   },
   "criteria": "start: each river has its own colour (< 1 %); A's colour never jumps (< 3 % of the A–B colour distance per frame); receptor policy ends within 10 % of A's colour; physical mixing conserves the dye inventory (< 1 %)",
-  "wallSeconds": 123.45279999999981,
-  "date": "2026-10-13T21:39:35.596Z",
+  "wallSeconds": 201.96660000000008,
+  "date": "2026-10-13T23:10:18.185Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r9_multiple": {
@@ -1164,8 +1164,8 @@
    "maxF": 0.8833333333333333
   },
   "criteria": "two absorptions at the same time; A gains exactly what the transfer matrix says; no transfer counted twice; f ≤ 1; mass exact",
-  "wallSeconds": 46.65209999999963,
-  "date": "2026-10-13T21:40:22.254Z",
+  "wallSeconds": 88.31240000000037,
+  "date": "2026-10-13T23:11:46.505Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  },
  "r10_stability": {
@@ -1233,8 +1233,453 @@
    "nominalT": 4.450953187754166
   },
   "criteria": "every run completes with exact mass and no losses; absorption duration varies < 25 % across dt and resolution",
-  "wallSeconds": 241.11879999999982,
-  "date": "2026-10-13T21:44:23.382Z",
+  "wallSeconds": 260.18580000000077,
+  "date": "2026-10-13T23:16:06.699Z",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "r11_valley": {
+  "pass": true,
+  "metrics": {
+   "seconds": 30,
+   "spacing": 0.19,
+   "springInKg": 60087.67888617342,
+   "seaOutKg": 4692.0191592453175,
+   "inDomainKg": 55395.659726928105,
+   "waterDepthP50": 0.11485815814757627,
+   "waterDepthP99": 0.4858594981777744,
+   "speedMean": 0.8814230255654157,
+   "speedMax": 5.845765285157177,
+   "events": [
+    {
+     "absorber": "Jade",
+     "absorbed": "Coral",
+     "phase": "completa",
+     "massRatioR0": 1.7192028985507246,
+     "nominalT": 4.83204851279617,
+     "duration": 6.883333333333676,
+     "grabToEnd": 7.466666666667038,
+     "massB0": 3742.7667281841264,
+     "massTransferred": 3742.7667281841264,
+     "f": 1,
+     "contactAreaMean": 3.911143203883496,
+     "contactAreaMax": 8.446594708946186,
+     "relSpeedMean": 0.33947087378640767,
+     "rateModelMean": 550.2332524271847
+    },
+    {
+     "absorber": "Jade",
+     "absorbed": "Voltio",
+     "phase": "interrumpida",
+     "massRatioR0": 14.977653631284916,
+     "nominalT": 1.99150113082995,
+     "duration": 1.8833333333332263,
+     "grabToEnd": 2.4666666666665265,
+     "massB0": 2427.374073713618,
+     "massTransferred": 888.229060492972,
+     "f": 0.3659217877094972,
+     "contactAreaMean": 1.0221964285714278,
+     "contactAreaMax": 2.0981986856617914,
+     "relSpeedMean": 0.15757142857142853,
+     "rateModelMean": 488.31607142857087
+    },
+    {
+     "absorber": "Jade",
+     "absorbed": "Tú",
+     "phase": "completa",
+     "massRatioR0": 1.3119026933101652,
+     "nominalT": 5.646689687279455,
+     "duration": 8.249999999999531,
+     "grabToEnd": 8.833333333332831,
+     "massB0": 15608.422116449019,
+     "massTransferred": 15608.422116449019,
+     "f": 1,
+     "contactAreaMean": 15.958261133603239,
+     "contactAreaMax": 28.083582408088592,
+     "relSpeedMean": 0.4434615384615382,
+     "rateModelMean": 1902.2823886639667
+    },
+    {
+     "absorber": "Tú",
+     "absorbed": "Voltio",
+     "phase": "interrumpida",
+     "massRatioR0": 3.492021276595745,
+     "nominalT": 3.3588409618463833,
+     "duration": 13.966666666666296,
+     "grabToEnd": 14.549999999999658,
+     "massB0": 2549.420814850057,
+     "massTransferred": 2481.6170697742577,
+     "f": 0.973404255319149,
+     "contactAreaMean": 3.531942652329743,
+     "contactAreaMax": 5.774529716094845,
+     "relSpeedMean": 0.1790573476702511,
+     "rateModelMean": 527.916965352449
+    }
+   ],
+   "springs": [
+    {
+     "spring": "Tú",
+     "feeds": "Jade",
+     "flowM3s": 0.7436110776116099
+    },
+    {
+     "spring": "Voltio",
+     "feeds": "Voltio",
+     "flowM3s": 0.21450319546488747
+    },
+    {
+     "spring": "Jade",
+     "feeds": "Jade",
+     "flowM3s": 0.7436110776116099
+    },
+    {
+     "spring": "Coral",
+     "feeds": "Jade",
+     "flowM3s": 0.42900639092977494
+    }
+   ],
+   "series": [
+    {
+     "t": 1,
+     "kg": [
+      705,
+      190,
+      705,
+      380
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 2,
+     "kg": [
+      1410,
+      407,
+      1410,
+      814
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 3,
+     "kg": [
+      2204,
+      624,
+      2204,
+      1248
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 4,
+     "kg": [
+      2909,
+      841,
+      2909,
+      1682
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 5,
+     "kg": [
+      3702,
+      1058,
+      3702,
+      2115
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 6,
+     "kg": [
+      4407,
+      1275,
+      4407,
+      2549
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 7,
+     "kg": [
+      5112,
+      1492,
+      5112,
+      2983
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 8,
+     "kg": [
+      5906,
+      1709,
+      5906,
+      3417
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 9,
+     "kg": [
+      6611,
+      1926,
+      6672,
+      3790
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 10,
+     "kg": [
+      7404,
+      2115,
+      7845,
+      3790
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 11,
+     "kg": [
+      8109,
+      2332,
+      9106,
+      3668
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 12,
+     "kg": [
+      8903,
+      2549,
+      10435,
+      3566
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 13,
+     "kg": [
+      9859,
+      2516,
+      11750,
+      3390
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 14,
+     "kg": [
+      10788,
+      2509,
+      13079,
+      3200
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 15,
+     "kg": [
+      11933,
+      2373,
+      14490,
+      3017
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 16,
+     "kg": [
+      13256,
+      1973,
+      16381,
+      0
+     ],
+     "free": 2265,
+     "seaKg": 0
+    },
+    {
+     "t": 17,
+     "kg": [
+      14646,
+      1593,
+      19270,
+      0
+     ],
+     "free": 603,
+     "seaKg": 0
+    },
+    {
+     "t": 18,
+     "kg": [
+      15683,
+      1370,
+      21012,
+      0
+     ],
+     "free": 108,
+     "seaKg": 0
+    },
+    {
+     "t": 19,
+     "kg": [
+      15697,
+      1587,
+      23108,
+      0
+     ],
+     "free": 20,
+     "seaKg": 0
+    },
+    {
+     "t": 20,
+     "kg": [
+      14354,
+      1776,
+      26260,
+      0
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 21,
+     "kg": [
+      12910,
+      1993,
+      29549,
+      0
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 22,
+     "kg": [
+      11601,
+      2210,
+      32878,
+      0
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 23,
+     "kg": [
+      10150,
+      2427,
+      36173,
+      0
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 24,
+     "kg": [
+      8767,
+      1932,
+      40289,
+      0
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 25,
+     "kg": [
+      7377,
+      1973,
+      43700,
+      0
+     ],
+     "free": 0,
+     "seaKg": 0
+    },
+    {
+     "t": 26,
+     "kg": [
+      0,
+      2190,
+      46642,
+      0
+     ],
+     "free": 6007,
+     "seaKg": 271
+    },
+    {
+     "t": 27,
+     "kg": [
+      0,
+      2936,
+      51063,
+      0
+     ],
+     "free": 1505,
+     "seaKg": 976
+    },
+    {
+     "t": 28,
+     "kg": [
+      0,
+      2624,
+      52446,
+      0
+     ],
+     "free": 380,
+     "seaKg": 2082
+    },
+    {
+     "t": 29,
+     "kg": [
+      0,
+      2054,
+      53321,
+      0
+     ],
+     "free": 88,
+     "seaKg": 3288
+    },
+    {
+     "t": 30,
+     "kg": [
+      0,
+      1058,
+      54318,
+      0
+     ],
+     "free": 20,
+     "seaKg": 4692
+    }
+   ],
+   "conservationCountError": 0,
+   "conservationBookError": 0,
+   "solverMassRelError": 0,
+   "lost": 0,
+   "insideSolids": 0,
+   "speedClamps": 0,
+   "maxF": 0
+  },
+  "criteria": "every frame: total = initial + springs − sea and every river N(t) − N(0) = In − Out + transfers in − out (0 particles of error); water reaches the sea; at least one confluence absorption completes and its spring becomes a tributary of the absorber; nothing lost or inside solids",
+  "wallSeconds": 616.0820999999996,
+  "date": "2026-10-13T23:26:22.797Z",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
  }
 }

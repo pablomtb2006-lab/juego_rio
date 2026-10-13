@@ -32,9 +32,12 @@ export class FluidCollision {
   /**
    * @param {{min:number[],max:number[]}} domain
    * @param {{boxes?:{center:number[],half:number[],rot?:number[]}[], spheres?:{center:number[],radius:number}[]}} obstacles
+   * @param {import('./Terrain.js').Terrain} [terrain]  ground relief (a solid below H(x, z))
    */
-  constructor(domain, obstacles = {}) {
+  constructor(domain, obstacles = {}, terrain = null) {
     this.domain = { min: [...domain.min], max: [...domain.max] };
+    this.terrain = terrain;
+    this.glsl = collisionGLSL(terrain);
     this.boxes = [];
     this.spheres = [];
     for (const b of obstacles.boxes ?? []) this.addBox(b);
@@ -79,6 +82,17 @@ export class FluidCollision {
 
   /** Signed distance to the nearest obstacle (not the domain walls), JS mirror of the GLSL. */
   obstacleDistance(x, y, z) {
+    const s = this.solidsDistance(x, y, z);
+    return this.terrain ? Math.min(s, this.terrain.distance(x, y, z)) : s;
+  }
+
+  /** Ground height under (x, z): the terrain, or the domain floor. */
+  groundY(x, z) {
+    return this.terrain ? Math.max(this.terrain.height(x, z), this.domain.min[1]) : this.domain.min[1];
+  }
+
+  /** Signed distance to boxes and spheres only (no terrain). */
+  solidsDistance(x, y, z) {
     let best = Infinity;
     for (const b of this.boxes) {
       const px = x - b.center[0], py = y - b.center[1], pz = z - b.center[2];
@@ -104,7 +118,8 @@ export class FluidCollision {
 }
 
 /** GLSL: obstacle SDF, projection out of solids, and contact normal. Needs `uPR` (particle radius). */
-export const COLLISION_GLSL = /* glsl */ `
+export function collisionGLSL(terrain = null) {
+  return /* glsl */ `
 #define MAXB ${MAX_BOXES}
 #define MAXS ${MAX_SPHERES}
 uniform vec3 uDomMin;
@@ -116,6 +131,7 @@ uniform mat3 uBoxR[MAXB];
 uniform int uNSph;
 uniform vec4 uSph[MAXS];
 uniform float uPR;
+${terrain ? terrain.glsl() : ''}
 
 // xyz = outward normal of the nearest obstacle surface, w = signed distance (negative inside)
 vec4 obstacle(vec3 p) {
@@ -150,6 +166,17 @@ vec4 obstacle(vec3 p) {
       n = l > 1e-6 ? r / l : vec3(0.0, 1.0, 0.0);
     }
   }
+#ifdef HAS_TERRAIN
+  {
+    vec3 T = terrain(p.xz);
+    float k = inversesqrt(1.0 + dot(T.yz, T.yz));
+    float s = (p.y - T.x) * k;
+    if (s < best) {
+      best = s;
+      n = vec3(-T.y, 1.0, -T.z) * k;
+    }
+  }
+#endif
   return vec4(n, best);
 }
 
@@ -178,3 +205,6 @@ vec3 contactNormal(vec3 p) {
   return l > 1e-6 ? n / l : vec3(0.0);
 }
 `;
+}
+
+export const COLLISION_GLSL = collisionGLSL(null);

@@ -7,11 +7,17 @@ a un río de otro es la etiqueta de propietario de cada partícula.
 ```
 npm run dev
 → http://localhost:5173/lab/agua/?modo=rivales      (o el selector «Ríos rivales» del panel)
-node tools/fluid-tests.mjs rivales                  pruebas 1–10 sin pantalla
+node tools/fluid-tests.mjs rivales                  pruebas 1–11 sin pantalla
 ```
 
-Controles: **WASD** mueve tu río (turquesa) · **C** cámara libre / seguir · **R** reiniciar ·
-**P** pausa. Toca a un río más pequeño para absorberlo; huye de los grandes.
+Controles: **WASD** empuja tu río (turquesa) · **C** cámara libre / seguir · **R** reiniciar ·
+**P** pausa.
+
+**El modo rivales es un valle.** Cuatro ríos nacen en manantiales en la ladera, bajan por cauces
+excavados en el terreno y desembocan en el mar. Se encuentran como los ríos de verdad, en
+**confluencias**, y allí el mayor absorbe al menor. Nada sostiene la forma del agua salvo el
+terreno: la primera versión le daba forma con una «cohesión de cuerpo» y el resultado parecían
+conos, así que en el valle está apagada (§4).
 
 ## 1. Qué es física y qué es regla de juego
 
@@ -19,8 +25,10 @@ Controles: **WASD** mueve tu río (turquesa) · **C** cámara libre / seguir · 
 |---|---|---|
 | Movimiento del agua, presión, choques, rodear obstáculos, salpicaduras | **Física simulada** (PBF) | `FluidSolver.js` |
 | Masa de cada río m = N·m_p, volumen V = m/ρ, ρ = 998,2 kg/m³ | **Medida** de las partículas | `RiverEntity.js` |
-| Tamaño y forma de cada río | **Emergente** (gravedad + cohesión de cuerpo) | ver §4 |
-| Cohesión de cuerpo κ(C − x) y amortiguación interna | **Regla de juego** (fuerzas internas de suma cero) | `FluidSolver.js` (`predict`) |
+| Forma y tamaño de cada río | **Física**: el agua baja por el terreno (valle con cauces) | `Terrain.js`, `scenes/valley.js` |
+| Manantiales y mar | **Condiciones de contorno** contabilizadas por río (entrada y salida) | `RiverSimulation.js` |
+| Cohesión de cuerpo κ(C − x) | **Regla de juego opcional**, apagada en el valle; solo en las pruebas 1–10 sobre suelo plano | `FluidSolver.js` (`predict`) |
+| Un río absorbido pasa a ser afluente (su manantial alimenta al absorbedor) | **Regla de juego** | `RiverEcosystem.js` |
 | Fuerza de dirección (jugador / IA) | **Fuerza externa** contabilizada (trabajo P = a·M v̄) | `RiverEntity.js` |
 | Contacto entre ríos (partícula a partícula, distancia < h) | **Medida** | `RiverIdentity.js` |
 | Absorción: quién absorbe, a qué ritmo, histéresis, fases | **Regla de juego** | `AbsorptionSystem.js` |
@@ -74,19 +82,56 @@ Absorber es cambiar el propietario de partículas reales en el frente de contact
 - nunca se suman radios ni se escala una malla
 - cada partícula que cambia de dueño se cuenta en una matriz 8×8 acumulada en la GPU
 
-## 4. El tamaño emerge de la masa
+## 4. El valle: agua que baja por un río
 
-Sin una regla que mantenga unido cada río, el agua se extendería en una lámina y dos ríos se
-fundirían al tocarse. La **cohesión de cuerpo** (regla de juego) aplica a cada partícula una
-aceleración horizontal κ·(C − x), con tope de 14 m/s², hacia el centro de masas de su río, más
-una amortiguación −c·(v − v̄). Sumadas sobre el río ambas son cero: dan forma al río pero no lo
-mueven. El equilibrio hidrostático con la gravedad es una cúpula:
+**Terreno** (`src/fluid/Terrain.js`): es una función analítica que se evalúa igual en la GPU
+(colisiones del solver) y en la CPU (diagnóstico, IA, malla del render):
 
-  H(r) = H0 − κ r²/(2g),   V = π κ R⁴/(4g)   ⇒   R = (4 g V/(π κ))^¼
+  H(x, z) = base(x, z) − D · U(x, z)
 
-Con κ = 8 s⁻²: 1,5 m³ → R ≈ 1,24 m; 4 m³ → 1,58 m; 8 m³ → 1,88 m. Al absorber, el radio crece
-solo porque hay más agua (∝ V^¼). Limitación: el centro de masas llega con un fotograma de
-retraso, así que la suma no es exactamente cero.
+- **base**: plano inclinado al 10% hacia el mar, caída a la costa, laderas laterales y dos
+  ondulaciones suaves.
+- **U**: red de cauces. Cada cauce es una polilínea; cada tramo aporta a·exp(−d²/w²) y
+  U = tanh(1,5 Σ)/tanh(1,5). Vale 1 en el eje del cauce y es algo más profundo donde dos cauces
+  se juntan, que es la poza de una confluencia.
+- **Como sólido**: distancia ≈ (y − H)/√(1 + |∇H|²) con gradiente exacto. Es exacta en planos y
+  de primer orden en curvas suaves.
+
+**Escena** (`src/fluid/scenes/valley.js`): cuatro manantiales a x = −13,5, cauces que se unen de
+dos en dos en (−3, −4,2) y (−1, 4) y un río principal desde (7, −0,2) hasta el mar (sumidero
+desde x = 13,6). Hay seis rocas en los cauces.
+
+| Río | Manantial | Caudal | IA |
+|---|---|---|---|
+| Tú | r = 0,40 m, 1,6 m/s | 0,74 m³/s | — |
+| Voltio | r = 0,28 m | 0,21 m³/s | agresiva |
+| Jade | r = 0,38 m | 0,74 m³/s | territorial |
+| Coral | r = 0,30 m | 0,43 m³/s | oportunista |
+
+Los caudales son los del perfil de desarrollo (d = 0,19 m). La masa de un río es el agua que
+tiene en el valle: caudal × tiempo de recorrido, más lo que absorba.
+
+**Contabilidad con manantiales y mar:** en cada río,
+N(t) − N(0) = entradas − salidas + transferencias recibidas − transferencias cedidas. Las
+entradas se cuentan al emitir y las salidas en la GPU por propietario al cruzar el sumidero.
+
+**Afluentes:** cuando un río es absorbido por completo (f = 1), su manantial no se apaga: pasa a
+alimentar al absorbedor, y el agua que le quedaba se libera como agua libre que se une a quien
+toque.
+
+**Cohesión de cuerpo (apagada en el valle):** la regla κ·(C − x) tiraba de cada partícula hacia
+el centro de su río y formaba cúpulas de radio R = (4gV/(πκ))^¼ (los «conos»). Solo se mantiene
+para las pruebas 1–10, que miden el mecanismo de absorción con cuerpos de agua aislados sobre
+suelo plano.
+
+**Ajustes medidos para el valle:**
+- **Área de referencia de φ_A:** 1,0·V_B0^(2/3) en lugar de 2,5, porque en una confluencia los
+  ríos se tocan de lado (medido: 0,7–3 m² frente a 3–12 m² en un choque de frente).
+- **IA:** nunca empuja su agua cuesta arriba.
+- **Espuma:** umbrales más altos (una lámina fina y rápida no es espuma).
+- **Superficie:** más suavizado y destellos del sol al 30%, porque una lámina de una o dos
+  partículas de espesor da normales ruidosas que centelleaban como puntos blancos.
+- **Tinte:** más suave (fuerza 1,6 en lugar de 3,2), para que se vea agua y no pintura.
 
 ## 5. Contacto real (§5)
 
@@ -181,7 +226,8 @@ transparencia. El pase de espesor acumula la profundidad óptica Σσ·cuerda po
 es aditivo en profundidad óptica, así que la mezcla de aguas de distinto color a lo largo de un
 rayo es exacta.
 
-La absorbancia de cada río se calcula a partir de su color objetivo: σ = 3,2·(−ln c_lineal).
+La absorbancia de cada río se calcula a partir de su color objetivo: σ = k·(−ln c_lineal), con
+k = 1,6 en el valle (un tinte del agua) y 3,2 en las pruebas sobre suelo plano.
 Colores: jugador turquesa; rivales azul eléctrico, esmeralda, violeta, oro anaranjado y coral.
 El color es solo visual: no afecta a la física.
 
@@ -222,12 +268,14 @@ Se comprueba cada fotograma con recuentos enteros exactos:
 
 Un río eliminado no destruye masa: sus partículas ya pertenecen a otro río o al agua libre.
 
-## 11. Pruebas 1–10 — resultados medidos
+## 11. Pruebas 1–11 — resultados medidos
 
 Ejecutadas con `node tools/fluid-tests.mjs rivales` en Chromium sin pantalla con WebGL2 sobre
 **SwiftShader (CPU)**. Resolución d = 0,15 m salvo en la prueba 10; los datos completos están en
 `docs/validation/results.json`. Columna «Cons.»: error de conservación en partículas
-(total / libro de transferencias). **10/10 pasan.**
+(total / libro de transferencias). **11/11 pasan**, y las 5 pruebas base siguen dando los mismos
+números. Las pruebas 1–10 miden el mecanismo de absorción con cuerpos de agua sobre suelo plano
+(con cohesión de cuerpo); la 11 es el valle real, sin cohesión.
 
 | # | Prueba | Resultado medido | Criterio | Cons. |
 |---|---|---|---|---|
@@ -241,6 +289,7 @@ Ejecutadas con `node tools/fluid-tests.mjs rivales` en Chromium sin pantalla con
 | 8 | Identidad visual | cada río empieza con su color (< 1%); el color de A cambia como mucho **0,45%** por fotograma (de la distancia A–B); con la política receptor acaba a **2,5%** de su color; con mezcla física el inventario de tinte varía **9·10⁻⁷** | sin saltos, color final según la política, tinte conservado | 0 / 0 |
 | 9 | Varios rivales | A absorbe a B y a C **a la vez** (147 fotogramas simultáneos): 2,45 s y 2,60 s; A gana **511** partículas = 511 en la matriz; 0 violaciones de cadena | sin doble transferencia, cuentas exactas | 0 / 0 |
 | 10 | Estabilidad | la misma absorción (R0 ≈ 2) con subpasos 2/3/4 y d = 0,18/0,15/0,13 m: **4,15–4,23 s**, dispersión del **2,0%** (T(2) = 4,45 s); todas completas, sin pérdidas ni recortes | dispersión < 25%, masa exacta | 0 / 0 |
+| 11 | **Valle** (d = 0,19 m, 30 s, sin cohesión ni guion) | entran 60,1 t por los manantiales y salen 4,7 t al mar; Jade absorbe a Coral en la primera confluencia (R0 1,72, **6,9 s**) y a Tú en la principal (R0 1,31, **8,3 s**, 15,6 t); los manantiales de Tú y de Coral pasan a alimentar a Jade; Voltio sobrevive; profundidad del agua sobre el terreno: mediana **0,11 m**, p99 **0,49 m** | contabilidad exacta con manantiales y mar, el agua llega al mar, al menos una confluencia completa con su manantial convertido en afluente | 0 / 0 |
 
 En todas las pruebas: ninguna pérdida numérica, ninguna partícula dentro de sólidos y ninguna
 velocidad recortada.
@@ -264,6 +313,15 @@ siendo absorbido. Tampoco hay prueba automática de la IA: se ha observado en el
 (cazas, huidas, territorio, rodeo de obstáculos) sin criterio numérico.
 
 ## 12. Comportamientos observados (emergentes, no programados)
+
+En el valle:
+- **El absorbedor sube por el afluente.** Las partículas ya convertidas tocan las siguientes del
+  río absorbido, así que el color del absorbedor remonta poco a poco el cauce del afluente desde
+  la confluencia.
+- **Cadena bloqueada.** Si tú estás absorbiendo a Voltio y Jade te alcanza en la confluencia
+  principal, tu absorción se congela mientras Jade te absorbe. Lo mide la prueba 11.
+
+Con cuerpos sobre suelo plano (pruebas 1–10, cohesión de cuerpo activada):
 
 - **Filamentos:** el agua ya transferida pertenece al absorbedor y su cohesión de cuerpo la
   arrastra hacia él. Por eso se ve una corriente que va del río absorbido al absorbedor y que
@@ -289,6 +347,15 @@ siendo absorbido. Tampoco hay prueba automática de la IA: se ha observado en el
   despreciable a esta escala). Usa el centro de masas del fotograma anterior.
 - **Área de contacto.** Es una superficie equivalente: cuando los cuerpos se interpenetran cuenta
   un volumen. Los umbrales están calibrados con esta definición y con d = 0,15 m.
+- **Ríos finos.** En el perfil de desarrollo (d = 0,19 m) un arroyo tiene una o dos partículas de
+  espesor. La superficie se suaviza más en el valle, pero los ríos finos siguen viéndose algo
+  granulados: con perfiles de más resolución (d = 0,12 o 0,095 m) se ven mejor, a cambio de
+  más coste.
+- **Terreno fijo.** El agua no erosiona: los cauces están excavados de antemano. El mar es un
+  sumidero contabilizado más un plano visual, sin olas.
+- **Control del jugador.** WASD empuja toda el agua de tu río. En un valle eso cambia su
+  velocidad y lo inclina dentro del cauce; para saltar a otro cauce hay que superar la divisoria
+  (unos 0,75 m).
 - **Pruebas a d = 0,15 m.** La prueba 10 barre d entre 0,13 y 0,18 m; las resoluciones del modo
   experimental (d = 0,095 m) no se han medido en pruebas de rivales.
 - **Hasta 7 ríos más el agua libre.** Son 8 ranuras de propietario.

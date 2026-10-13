@@ -41,12 +41,13 @@ export class RiverEntity {
    * @param {number} [o.resistance]  0..1, slows absorption of this river (GAME RULE)
    * @param {number} [o.speed]       steering multiplier (personality)
    */
-  constructor({ slot, name, type = 'rival', color, personality = null, resistance = 0.3, speed = 1 }) {
+  constructor({ slot, name, type = 'rival', color, personality = null, resistance = 0.3, speed = 1, dyeStrength = 3.2 }) {
     this.slot = slot;
     this.name = name;
     this.type = type;
     this.color = color;
-    this.sigma = absorbanceForColor(color);
+    this.sigma = absorbanceForColor(color, dyeStrength);
+    this.fed = false; // has a spring feeding it
     this.personality = personality;
     this.resistance = resistance;
     this.speedMul = speed;

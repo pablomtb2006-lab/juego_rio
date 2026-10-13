@@ -7,7 +7,7 @@ import { WaterRendering, SKY_GLSL } from '../../src/fluid/render/WaterRendering.
 import { FoamAndSpray } from '../../src/fluid/render/FoamAndSpray.js';
 import { FieldView, FIELDS } from '../../src/fluid/render/FieldView.js';
 import { RiverEcosystem } from '../../src/fluid/RiverEcosystem.js';
-import { RIVALS, RivalsHud } from './rivals.js';
+import { RIVALS, RivalsHud, addValleyMeshes } from './rivals.js';
 
 /**
  * Río Vivo — water laboratory, isolated from the game.
@@ -59,8 +59,8 @@ const SINK = { min: [9.6, 0, 9.6], max: [12, 1.2, 12] };
 const MODE = params.get('modo') === 'rivales' ? 'rivales' : 'laboratorio';
 const SC =
   MODE === 'rivales'
-    ? { domain: RIVALS.domain, boxes: RIVALS.boxes, spheres: RIVALS.spheres, water: null, source: null, sink: null }
-    : { domain: DOMAIN, boxes: ARENA.boxes, spheres: ARENA.spheres, water: WATER, source: SOURCE, sink: SINK };
+    ? { domain: RIVALS.domain, boxes: RIVALS.boxes, spheres: RIVALS.spheres, terrain: RIVALS.terrain, water: null, source: null, sink: null }
+    : { domain: DOMAIN, boxes: ARENA.boxes, spheres: ARENA.spheres, terrain: null, water: WATER, source: SOURCE, sink: SINK };
 
 // --- renderer, camera, light --------------------------------------------------------------------
 const canvas = document.getElementById('c');
@@ -76,8 +76,8 @@ camera.position.set(10, 10.5, 15);
 const controls = new OrbitControls(camera, canvas);
 controls.target.set(-3, 0.5, -3);
 if (MODE === 'rivales') {
-  camera.position.set(-6, 15, -24);
-  controls.target.set(-4, 0.5, -4);
+  camera.position.set(-22, 11, -9);
+  controls.target.set(-8, 1.5, -1);
 }
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI * 0.49;
@@ -150,7 +150,8 @@ function concreteTexture() {
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshStandardMaterial({ map: concreteTexture(), roughness: 0.92 }));
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
-scene.add(floor);
+if (SC.terrain) addValleyMeshes(scene, SC.terrain);
+else scene.add(floor);
 
 const blockMat = new THREE.MeshStandardMaterial({ color: 0x9ba4a9, roughness: 0.85 });
 const rockMat = new THREE.MeshStandardMaterial({ color: 0x6d7c84, roughness: 0.95, flatShading: true });
@@ -184,7 +185,7 @@ const kerbMat = new THREE.MeshStandardMaterial({ color: 0x8b9196, roughness: 0.9
 const dm = SC.domain;
 const kx = (dm.max[0] - dm.min[0]) / 2 + 0.2;
 const kz = (dm.max[2] - dm.min[2]) / 2 + 0.2;
-for (const [cx, cz, sx, sz] of [[0, -kz, 2 * kx + 0.4, 0.4], [0, kz, 2 * kx + 0.4, 0.4], [-kx, 0, 0.4, 2 * kz + 0.4], [kx, 0, 0.4, 2 * kz + 0.4]]) {
+for (const [cx, cz, sx, sz] of SC.terrain ? [] : [[0, -kz, 2 * kx + 0.4, 0.4], [0, kz, 2 * kx + 0.4, 0.4], [-kx, 0, 0.4, 2 * kz + 0.4], [kx, 0, 0.4, 2 * kz + 0.4]]) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(sx, 1.4, sz), kerbMat);
   m.position.set(cx, 0.7, cz);
   m.receiveShadow = m.castShadow = true;
@@ -217,13 +218,24 @@ function build() {
     capacity: P.capacity,
     domain: SC.domain,
     obstacles: { boxes: SC.boxes, spheres: SC.spheres },
-    config: { spacing: P.spacing, substeps: P.substeps, iterations: P.iterations },
+    terrain: SC.terrain,
+    // the valley: white water only where it is really churned (thin fast sheets are not foam)
+    config: { spacing: P.spacing, substeps: P.substeps, iterations: P.iterations, ...(SC.terrain ? { foam: [18, 4.5, 0.45, 0.7] } : {}) },
   });
   hud?.dispose();
   eco = hud = null;
   source = { on: false, speed: 0, starved: 0 };
   if (MODE === 'rivales') {
-    eco = new RiverEcosystem(sim, { rivers: RIVALS.rivers, neutral: RIVALS.neutral, colorPolicy: $('policy').value, seed: (Math.random() * 1e6) | 0 });
+    eco = new RiverEcosystem(sim, {
+      rivers: RIVALS.rivers,
+      neutral: RIVALS.neutral,
+      sink: RIVALS.sink,
+      absorption: RIVALS.absorption,
+      dyeStrength: RIVALS.dyeStrength,
+      maneuver: RIVALS.maneuver,
+      colorPolicy: $('policy').value,
+      seed: (Math.random() * 1e6) | 0,
+    });
     eco.fill();
     hud = new RivalsHud(eco, camera);
   } else {
@@ -234,6 +246,11 @@ function build() {
   }
   controller = new RiverController(sim, { maxAccel: 6, response: 3 });
   surface = new FreeSurfaceReconstruction(renderer, sim.L, sim.cfg.particleRadius);
+  if (SC.terrain) {
+    // shallow river sheets are one or two particles thick: a wider surface filter removes the
+    // per-particle normal noise that otherwise sparkles as sun glints
+    Object.assign(surface.params, { splatScale: 1.75, smoothing: 7, iterations: 3 });
+  }
   foam = new FoamAndSpray(sim.L);
   if (fieldView) scene.remove(fieldView.points);
   const prevField = fieldView?.field ?? null;
@@ -546,7 +563,7 @@ try {
   }
   build();
   if (params.has('source')) toggleSource();
-  window.__lab = { get sim() { return sim; }, get eco() { return eco; }, frame, water, get surface() { return surface; }, get controller() { return controller; }, throwRock, toggleField, camera, controls, build, get stats() { return stats; }, toggleSource };
+  window.__lab = { get sim() { return sim; }, get eco() { return eco; }, get foam() { return foam; }, frame, water, get surface() { return surface; }, get controller() { return controller; }, throwRock, toggleField, camera, controls, build, get stats() { return stats; }, toggleSource };
   window.__manual = params.has('manual');
   window.__READY = true;
   if (!window.__manual) requestAnimationFrame(frame);

@@ -44,9 +44,10 @@ export const WATER_PRESETS = {
   real: { absorb: [0.34, 0.057, 0.0092], turbidity: 0.02, scatterTint: [1, 1, 1], reflect: 1.0, refract: 1.0, bottom: 1.0, intensity: 1.0 },
   // a river carrying silt
   silty: { absorb: [1.2, 1.4, 1.9], turbidity: 2.4, scatterTint: [0.85, 0.72, 0.5], reflect: 0.9, refract: 0.7, bottom: 0.8, intensity: 1.0 },
-  // rival rivers: the colour comes from each river's dye absorbance (RiverEntity), so the base
-  // water is nearly clear and the scattering is neutral (white) — it lights whatever the dye leaves
-  rivales: { absorb: [0.34, 0.057, 0.0092], turbidity: 0.7, scatterTint: [1, 1, 1], reflect: 1.0, refract: 1.0, bottom: 1.0, intensity: 1.45 },
+  // rival rivers: real (nearly clear) water; each river's colour is a tint from its own dye
+  // absorbance (RiverEntity, dyeStrength), seen through the real thickness of water
+  // (glint 0.3: the sun's glitter on a shallow, broken sheet of particles reads as noise at full strength)
+  rivales: { absorb: [0.45, 0.1, 0.06], turbidity: 0.3, scatterTint: [0.75, 0.9, 0.95], reflect: 1.0, refract: 1.1, bottom: 1.0, intensity: 1.0, glint: 0.3 },
 };
 
 const VS = /* glsl */ `
@@ -72,6 +73,7 @@ uniform vec3 uAbsorb;
 uniform float uTurbidity;
 uniform vec3 uScatterTint;
 uniform float uReflect;
+uniform float uGlint;
 uniform float uRefract;
 uniform float uBottom;
 uniform float uIntensity;
@@ -142,7 +144,7 @@ void main() {
     vec3 R = reflect(-VW, nW);
     vec3 refl = skyRadiance(R);
     vec3 H = normalize(uSunDir + VW);
-    float glint = pow(max(dot(nW, H), 0.0), 900.0) * 12.0;
+    float glint = pow(max(dot(nW, H), 0.0), 900.0) * 12.0 * uGlint;
     col = mix(water, refl, F) + uSunColor * glint * uReflect;
 
     // the thinnest film melts into the ground instead of ending in a hard line
@@ -176,6 +178,7 @@ export class WaterRendering {
           uTurbidity: { value: 1 },
           uScatterTint: { value: new THREE.Vector3() },
           uReflect: { value: 1 },
+          uGlint: { value: 1 },
           uRefract: { value: 1 },
           uBottom: { value: 1 },
           uIntensity: { value: 1 },
@@ -191,7 +194,7 @@ export class WaterRendering {
   }
 
   setPreset(name) {
-    Object.assign(this.params, WATER_PRESETS[name]);
+    Object.assign(this.params, { glint: 1 }, WATER_PRESETS[name]);
   }
 
   /** Composite water over the scene into the current render target (null = screen). */
@@ -211,6 +214,7 @@ export class WaterRendering {
     u.uTurbidity.value = p.turbidity;
     u.uScatterTint.value.fromArray(p.scatterTint);
     u.uReflect.value = p.reflect;
+    u.uGlint.value = p.glint ?? 1;
     u.uRefract.value = p.refract;
     u.uBottom.value = p.bottom;
     u.uIntensity.value = p.intensity;

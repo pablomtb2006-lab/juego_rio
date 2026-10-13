@@ -2,7 +2,7 @@ import { GPU } from './gpu/GPU.js';
 import { header } from './gpu/glsl.js';
 import { resolveConfig } from './FluidProperties.js';
 import { FluidCollision } from './FluidCollision.js';
-import { FluidSolver } from './FluidSolver.js';
+import { FluidSolver, MAX_OWNERS } from './FluidSolver.js';
 import { RiverMassAccounting } from './RiverMassAccounting.js';
 import { SimulationDiagnostics } from './SimulationDiagnostics.js';
 
@@ -20,7 +20,7 @@ import { SimulationDiagnostics } from './SimulationDiagnostics.js';
  * `renderer.resetState()` after `step()`.
  */
 export class RiverSimulation {
-  constructor(gl, { capacity = 16384, domain, obstacles = {}, config = {} } = {}) {
+  constructor(gl, { capacity = 16384, domain, obstacles = {}, terrain = null, config = {} } = {}) {
     if ((capacity & (capacity - 1)) !== 0) throw new Error('[fluid] capacity must be a power of two');
     this.gl = gl;
     this.cfg = resolveConfig(config);
@@ -38,7 +38,7 @@ export class RiverSimulation {
     this.L = { TW, TH, GX, GY, GZ, CTW, CTH, cell, gridMin: [...domain.min], capacity };
 
     this.gpu = new GPU(gl);
-    this.collision = new FluidCollision(domain, obstacles);
+    this.collision = new FluidCollision(domain, obstacles, terrain);
     this.solver = new FluidSolver(this.gpu, this.L, cfg, this.collision);
     this.accounting = new RiverMassAccounting(cfg.mass, cfg.volume);
     this.diagnostics = new SimulationDiagnostics(this);
@@ -48,6 +48,8 @@ export class RiverSimulation {
     this.time = 0;
     this.steps = 0;
     this.nActiveBound = 0; // upper bound of active particles (exact when there are no sinks)
+    this.inflowByOwner = new Float64Array(MAX_OWNERS); // particles emitted per river (sources)
+    this.outflowByOwner = new Float32Array(MAX_OWNERS); // particles drained per river (sink), see refreshBound
     this.buildSinkCounter();
   }
 
@@ -99,6 +101,8 @@ export class RiverSimulation {
     this.gpu.upload(s.vel[s.cur], vel);
     this.gpu.upload(s.id[s.idCur], id);
     this.accounting.reset(n);
+    this.inflowByOwner.fill(0);
+    this.outflowByOwner.fill(0);
     this.nActiveBound = n;
     this.time = 0;
     this.steps = 0;
@@ -150,7 +154,8 @@ export class RiverSimulation {
 
   buildSinkCounter() {
     const gpu = this.gpu;
-    this.sinkCount = gpu.texture(1, 1);
+    // one texel per river: the outflow is booked per owner (the total is their sum)
+    this.sinkCount = gpu.texture(MAX_OWNERS, 1);
     gpu.clear([this.sinkCount]);
     this.sinkProg = gpu.program(
       'sinkCount',
@@ -159,13 +164,15 @@ out vec4 o;
 void main() { o = vec4(1.0); }`,
       `${header(this.L, { vertex: true })}
 uniform sampler2D uPos;
+uniform sampler2D uId;
 uniform vec3 uSinkMin;
 uniform vec3 uSinkMax;
 void main() {
   vec4 P = texelFetch(uPos, tc(gl_VertexID), 0);
+  float own = clamp(floor(texelFetch(uId, tc(gl_VertexID), 0).a + 0.5), 0.0, ${MAX_OWNERS - 1}.0);
   gl_PointSize = 1.0;
   bool inSink = P.w >= 0.0 && all(greaterThanEqual(P.xyz, uSinkMin)) && all(lessThanEqual(P.xyz, uSinkMax));
-  gl_Position = inSink ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
+  gl_Position = inSink ? vec4((own + 0.5) / ${MAX_OWNERS}.0 * 2.0 - 1.0, 0.0, 0.0, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
 }`,
     );
   }
@@ -176,12 +183,18 @@ void main() {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
     gl.blendEquation(gl.FUNC_ADD);
-    gpu.use(this.sinkProg, { uPos: this.solver.position, uSinkMin: this.sink.min, uSinkMax: this.sink.max });
+    gpu.use(this.sinkProg, { uPos: this.solver.position, uId: this.solver.identity, uSinkMin: this.sink.min, uSinkMax: this.sink.max });
     gl.drawArrays(gl.POINTS, 0, this.L.TW * this.L.TH);
     gl.disable(gl.BLEND);
   }
 
-  emit(src, dt) {
+  /**
+   * Emit one lattice layer from `src` if the water has advanced one spacing. The layer is queued
+   * in `batch`; all sources of a substep are written together by flushEmission(). (Writing each
+   * source separately into the free tail overwrote the previous source's particles — measured
+   * with four springs: two rivers never appeared.)
+   */
+  emit(src, dt, batch) {
     src.travelled += src.speed * dt;
     const d = this.cfg.spacing;
     if (src.travelled < d) return;
@@ -189,27 +202,30 @@ void main() {
     const k = src.layer.length;
     const { TW, TH } = this.L;
     const N = TW * TH;
-    if (this.nActiveBound + k > N) {
+    if (this.nActiveBound + batch.k + k > N) {
       this.refreshBound();
-      if (this.nActiveBound + k > N) {
+      if (this.nActiveBound + batch.k + k > N) {
         src.starved = (src.starved ?? 0) + 1; // capacity reached: nothing emitted, nothing booked
         return;
       }
     }
-    // inactive particles sort last, so [N−k, N) is free whenever nActive ≤ N − k
-    const pos = new Float32Array(k * 4);
-    const vel = new Float32Array(k * 4);
-    const id = new Float32Array(k * 4);
     const off = src.travelled; // sub-step placement keeps layers evenly spaced
     for (let i = 0; i < k; i++) {
       const p = src.layer[i];
-      pos.set([p[0] + src.dir[0] * off, p[1] + src.dir[1] * off, p[2] + src.dir[2] * off, this.nextId++], i * 4);
-      vel.set([src.dir[0] * src.speed, src.dir[1] * src.speed, src.dir[2] * src.speed, 0], i * 4);
-      id.set([src.dye[0], src.dye[1], src.dye[2], src.owner], i * 4);
+      batch.pos.push(p[0] + src.dir[0] * off, p[1] + src.dir[1] * off, p[2] + src.dir[2] * off, this.nextId++);
+      batch.vel.push(src.dir[0] * src.speed, src.dir[1] * src.speed, src.dir[2] * src.speed, 0);
+      batch.id.push(src.dye[0], src.dye[1], src.dye[2], src.owner);
     }
-    this.writeTail(pos, vel, k, id);
+    batch.k += k;
     this.accounting.addInflow(k);
-    this.nActiveBound += k;
+    this.inflowByOwner[src.owner] += k;
+  }
+
+  /** Inactive particles sort last, so [N−k, N) is free whenever nActive ≤ N − k. */
+  flushEmission(batch) {
+    if (!batch.k) return;
+    this.writeTail(new Float32Array(batch.pos), new Float32Array(batch.vel), batch.k, new Float32Array(batch.id));
+    this.nActiveBound += batch.k;
   }
 
   /** Write k particles into the last k texels (row-major), in at most two rectangles. */
@@ -240,7 +256,12 @@ void main() {
   refreshBound() {
     if (!this.sink) return;
     const out = this.gpu.read(this.sinkCount);
-    this.accounting.setOutflow(Math.round(out[0]));
+    let total = 0;
+    for (let k = 0; k < MAX_OWNERS; k++) {
+      this.outflowByOwner[k] = Math.round(out[k * 4]);
+      total += this.outflowByOwner[k];
+    }
+    this.accounting.setOutflow(total);
     this.nActiveBound = this.accounting.initial + this.accounting.inflow - this.accounting.outflow;
   }
 
@@ -251,7 +272,9 @@ void main() {
     const dt = frameDt / n;
     this.nextId ??= this.accounting.initial;
     for (let i = 0; i < n; i++) {
-      for (const src of this.sources) if (src.on) this.emit(src, dt);
+      const batch = { pos: [], vel: [], id: [], k: 0 };
+      for (const src of this.sources) if (src.on) this.emit(src, dt, batch);
+      this.flushEmission(batch);
       if (this.sink) this.countSink();
       this.solver.substep(dt, this.control, this.sink);
       this.time += dt;

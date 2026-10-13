@@ -215,6 +215,14 @@ export class AbsorptionSystem {
           this.finish(ep, t, 'completa', rivers);
           continue;
         }
+        if (ep.f >= 1) {
+          // a river fed by a spring never runs dry: once its whole initial mass has been taken,
+          // what is left of it is released as free water (and its spring becomes a tributary of
+          // the absorber, RiverEcosystem)
+          identity.release[ep.b] = 1;
+          this.finish(ep, t, 'completa', rivers);
+          continue;
+        }
         if (ep.f >= p.integration) ep.phase = 'integración';
         // the model: dm/dt (kg/s)
         const vB0 = (ep.nB0 * cfg.mass) / 998.2;
@@ -266,7 +274,7 @@ export class AbsorptionSystem {
       }
     }
     // minimum viable river: below V_min it dissolves into free water
-    for (const r of alive) if (r.volume < p.minVolume) identity.release[r.slot] = 1;
+    for (const r of alive) if (!r.fed && r.volume < p.minVolume) identity.release[r.slot] = 1;
     // free water joins any river it touches (that is not being absorbed)
     const k = 1 - Math.exp(-p.neutralRate * dt);
     for (const r of alive) if (r.absorbedBy === null) P[NEUTRAL * K + r.slot] = k;
@@ -287,6 +295,7 @@ export class AbsorptionSystem {
     ep.tStart = t;
     ep.nA0 = A.count;
     ep.nB0 = B.count;
+    ep.victimFed = !!B.fed; // fed by a spring: it keeps receiving water during the episode
     ep.R0 = A.count / Math.max(B.count, p.massFloorParticles);
     ep.S = (ep.R0 - 1) / (ep.R0 + 1);
     ep.T = nominalDuration(ep.R0, p);
@@ -331,7 +340,7 @@ export class AbsorptionSystem {
     }
     for (const r of rivers) {
       if (!r || r.type === 'neutral') continue;
-      if (r.alive && r.count === 0 && r.initialMass > 0) r.alive = false;
+      if (r.alive && r.count === 0 && !r.fed && (r.initialMass > 0 || r.peakCount > 0)) r.alive = false;
       r.state = !r.alive ? 'absorbido' : r.absorbedBy ? 'siendo absorbido' : r.absorbing.length ? 'absorbiendo' : r.grabbing ? 'agarre' : 'libre';
     }
   }

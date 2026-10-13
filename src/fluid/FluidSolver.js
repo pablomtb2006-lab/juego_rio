@@ -1,5 +1,4 @@
 import { header, neighbours } from './gpu/glsl.js';
-import { COLLISION_GLSL } from './FluidCollision.js';
 import { SpatialHash } from './SpatialHash.js';
 
 /** Rivers that can share one solver (owner slots in the identity texture; the last is "neutral"). */
@@ -96,7 +95,7 @@ vec4 boundary(vec3 p) {
     this.predictProg = gpu.program(
       'predict',
       `${H}
-${COLLISION_GLSL}
+${this.collision.glsl}
 uniform sampler2D uPos;
 uniform sampler2D uVel;
 uniform float uDt;
@@ -177,7 +176,7 @@ void main() {
       'lambda',
       `${H}
 ${KERNEL}
-${COLLISION_GLSL}
+${this.collision.glsl}
 ${BOUNDARY}
 uniform sampler2D uP;
 uniform sampler2D uLambdaPrev;
@@ -221,7 +220,7 @@ void main() {
       'delta',
       `${H}
 ${KERNEL}
-${COLLISION_GLSL}
+${this.collision.glsl}
 ${BOUNDARY}
 uniform sampler2D uP;
 uniform sampler2D uLambda;
@@ -263,7 +262,7 @@ void main() {
     this.velocityProg = gpu.program(
       'velocity',
       `${H}
-${COLLISION_GLSL}
+${this.collision.glsl}
 uniform sampler2D uX;
 uniform sampler2D uP;
 uniform float uDt;
@@ -450,7 +449,7 @@ void main() {
   vec3 a1 = vec3(1.0, 0.0, 0.0), a2 = vec3(0.0, 1.0, 0.0), a3 = vec3(0.0, 0.0, 1.0);
   vec3 s = vec3(uR0);
   if (count < uNIso) {
-    s = vec3(uR0 * 0.75); // a droplet
+    s = vec3(uR0 * 0.5); // a droplet (spray): smaller than a particle's splat, so it does not read as a bubble
   } else if (e.x > 1e-12 && e.x - e.z > 0.05 * e.x) {
     a3 = eigenvector(C, e.z);
     a1 = eigenvector(C, e.x);
