@@ -12,6 +12,8 @@ import * as THREE from 'three';
  * `touch` is exposed for the UI to draw the floating stick: { active, anchorX, anchorY, x, y, surge }
  * (CSS pixels).
  */
+const ABILITY_KEYS = [['KeyQ', 'wall'], ['KeyR', 'leech'], ['KeyF', 'fog']];
+
 export class Input {
   constructor(ctx) {
     this.ctx = ctx;
@@ -20,6 +22,9 @@ export class Input {
     this.forward = 0;
     this.move = new THREE.Vector2();
     this.surge = false;
+    this.ability = null;
+    this.abilityQueued = null;
+    this._abilityDown = new Set();
     this.device = 'keyboard';
     this.touch = { active: false, id: null, anchorX: 0, anchorY: 0, x: 0, y: 0, surge: false, lastEnd: -1, fingers: 0 };
     this._kSteer = 0;
@@ -117,6 +122,22 @@ export class Input {
       if (pad.buttons[1]?.pressed || pad.buttons[3]?.pressed) this.jumpQueued = true;
     }
     if (k.has('KeyE') || k.has('KeyJ')) this.jumpQueued = true;
+    // abilities (game/Abilities.js): one key each, edge-triggered so holding it does not spam
+    for (const [code, id] of ABILITY_KEYS) {
+      const down = k.has(code);
+      if (down && !this._abilityDown.has(code)) this.abilityQueued = id;
+      if (down) this._abilityDown.add(code);
+      else this._abilityDown.delete(code);
+    }
+    if (pad) {
+      for (const [btn, id] of [[2, 'wall'], [4, 'leech'], [5, 'fog']]) {
+        const down = !!pad.buttons[btn]?.pressed;
+        const key = `pad${btn}`;
+        if (down && !this._abilityDown.has(key)) this.abilityQueued = id;
+        if (down) this._abilityDown.add(key);
+        else this._abilityDown.delete(key);
+      }
+    }
 
     this.steer = x;
     this.forward = y;
@@ -125,6 +146,13 @@ export class Input {
     // jump is an edge-triggered action: consumed by the player controller
     this.jump = !!this.jumpQueued;
     this.jumpQueued = false;
+    this.ability = this.abilityQueued;
+    this.abilityQueued = null;
+  }
+
+  /** UI ability buttons / tests. */
+  requestAbility(id) {
+    this.abilityQueued = id;
   }
 
   /** UI jump button / tests. */

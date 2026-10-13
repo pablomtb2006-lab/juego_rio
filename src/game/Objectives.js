@@ -39,6 +39,15 @@ const POOL = [
     on: 'dam',
   },
   {
+    id: 'abil',
+    icon: '🪨',
+    targets: [1, 2, 3],
+    reward: 70,
+    text: (n, es) => (es ? `Usar ${n} ${n === 1 ? 'habilidad' : 'habilidades'} contra rivales` : `Use ${n} abilit${n === 1 ? 'y' : 'ies'} on rivals`),
+    on: 'ability',
+    needsAbility: true,
+  },
+  {
     id: 'cuts',
     icon: '✂️',
     targets: [1, 2, 3],
@@ -108,7 +117,7 @@ export class Objectives {
     const es = (this.game.ctx.ui?.lang ?? 'es') === 'es';
     const rand = mulberry32((seed >>> 0) + matches * 7919);
     // the arch goal only exists on matches that actually drop through the arch
-    const pool = POOL.filter((p) => p.id !== 'arch' || this.game.archMatch);
+    const pool = POOL.filter((p) => (p.id !== 'arch' || this.game.archMatch) && (!p.needsAbility || ['wall', 'leech', 'fog'].some((id) => this.game.abilities?.unlocked(this.game.player ?? { isPlayer: true }, id))));
     // the very first matches always include "reach the sea" so the goal of the game is explicit
     const picked = [];
     if (matches < 2) picked.push(pool.splice(pool.findIndex((p) => p.id === 'sea'), 1)[0]);
@@ -153,6 +162,7 @@ export class Objectives {
       bus.on('damBreak', ({ stream }) => isPlayer(stream) && bump('dam')),
       bus.on('cut', ({ attacker }) => isPlayer(attacker) && bump('cut')),
       bus.on('leap', ({ stream }) => isPlayer(stream) && bump('leap')),
+      bus.on('ability', ({ caster }) => isPlayer(caster) && bump('ability')),
       bus.on('bonus', ({ stream, kind }) => isPlayer(stream) && kind === 'arch' && bump('arch')),
       bus.on('finished', ({ stream, place }) => {
         if (!isPlayer(stream)) return;

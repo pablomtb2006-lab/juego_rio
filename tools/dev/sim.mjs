@@ -19,6 +19,14 @@ const out = await page.evaluate(async (N) => {
   g.init();
   g.noSlowMo = true;
   const res = [];
+  const tally = { cast: 0, onPlayer: 0, byPlayer: 0, wall: 0, leech: 0, fog: 0, blockedPlayer: 0 };
+  e.ctx.bus.on('ability', ({ kind, caster, target }) => {
+    tally.cast++; tally[kind]++;
+    if (target === g.player) tally.onPlayer++;
+    if (caster === g.player) tally.byPlayer++;
+  });
+  e.ctx.bus.on('wallBlocked', ({ stream }) => { if (stream === g.player) tally.blockedPlayer++; });
+  window.__tally = tally;
   for (let k = 0; k < N; k++) {
     g.startMatch({ seed: 1000 + k * 37, intro: false });
     const p = g.player;
@@ -41,17 +49,19 @@ const out = await page.evaluate(async (N) => {
       finished: g.finishCount,
     });
   }
-  return res;
+  return { res, tally };
 }, N);
 
-const wins = out.filter((o) => o.place === 1).length;
-console.log(JSON.stringify(out, null, 0).replace(/},/g, '},\n'));
-console.log(`\nWINS ${wins}/${out.length} = ${Math.round((wins / out.length) * 100)}%`);
+const { res: outRes, tally } = out;
+const wins = outRes.filter((o) => o.place === 1).length;
+console.log(JSON.stringify(outRes, null, 0).replace(/},/g, '},\n'));
+console.log(`\nWINS ${wins}/${outRes.length} = ${Math.round((wins / outRes.length) * 100)}%`);
 const by = {};
-for (const o of out) by[o.outcome] = (by[o.outcome] ?? 0) + 1;
+for (const o of outRes) by[o.outcome] = (by[o.outcome] ?? 0) + 1;
 console.log('outcomes', by);
-console.log('avg place', (out.reduce((a, o) => a + (o.place ?? 24), 0) / out.length).toFixed(1));
-console.log('reached the sea: player', out.filter((o) => o.outcome === 'win').length, '· anyone', out.filter((o) => o.finished > 0).length, '/', out.length);
-console.log('avg match', (out.reduce((a, o) => a + o.t, 0) / out.length).toFixed(0), 's');
+console.log('avg place', (outRes.reduce((a, o) => a + (o.place ?? 24), 0) / outRes.length).toFixed(1));
+console.log('reached the sea: player', outRes.filter((o) => o.outcome === 'win').length, '· anyone', outRes.filter((o) => o.finished > 0).length, '/', outRes.length);
+console.log('abilities', JSON.stringify(tally));
+console.log('avg match', (outRes.reduce((a, o) => a + o.t, 0) / outRes.length).toFixed(0), 's');
 await browser.close();
 await server.close();

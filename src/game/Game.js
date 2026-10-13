@@ -6,6 +6,7 @@ import { difficultyFor, FULL_DIFFICULTY } from './difficulty.js';
 import { Objectives } from './Objectives.js';
 import { Drought } from './Drought.js';
 import { Catastrophe } from './Catastrophe.js';
+import { Abilities } from './Abilities.js';
 import { biomeFor, applyBiomeUniforms, BIOMES } from './biomes.js';
 import { Forks } from './Forks.js';
 import { Hazards } from './Hazards.js';
@@ -63,6 +64,7 @@ export class Game {
     this.objectives = new Objectives(this);
     this.drought = new Drought(this);
     this.catastrophe = new Catastrophe(this);
+    this.abilities = new Abilities(this);
     this._tags = new Map();
 
     const bus = ctx.bus;
@@ -270,6 +272,7 @@ export class Game {
     this.hazards.place(seed);
     this.drought.reset();
     this.catastrophe.reset(seed);
+    this.abilities.reset();
     this.objectives.start(seed);
     this.cameraDirector.startMatch(player, { intro });
     this.setState('drop');
@@ -350,6 +353,7 @@ export class Game {
     this.rules.update(sdt);
     this.drought.update(sdt);
     this.catastrophe.update(sdt);
+    this.abilities.update(sdt);
 
     if (this.pendingEnd) {
       this.pendingEnd.t -= dt;

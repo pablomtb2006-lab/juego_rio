@@ -4,6 +4,7 @@ import { icon, dropIcon } from '../icons.js';
 import { rank } from './Minimap.js';
 import { HAZARD_TYPES } from '../../game/Hazards.js';
 import { CATASTROPHES } from '../../game/Catastrophe.js';
+import { ABILITIES, ABILITY_IDS } from '../../game/Abilities.js';
 
 const HAZARD_ICON = {
   lava: '🌋', geyser: '💨', sand: '🏜️', sinkhole: '🕳️', sun: '☀️', ice: '🧊', rocks: '🪨', steam: '♨️',
@@ -60,6 +61,13 @@ export class Hud {
       </div>
       <div class="hint" data-ref="hint"></div>
       <div class="steer-zones" data-ref="steer"><span>${icon('back')}</span><span>${icon('chevronRight')}</span></div>
+      <div class="abil" data-ref="abil">
+        ${ABILITY_IDS.map(
+          (id) => `<button class="abil__b" type="button" data-abil="${id}" data-sfx="none" style="--c:#${ABILITIES[id].color.toString(16).padStart(6, '0')}">
+          <i class="abil__cd"></i><b>${ABILITIES[id].icon}</b><kbd>${ABILITIES[id].key}</kbd><u class="abil__lock"></u><em class="abil__name"></em>
+        </button>`,
+        ).join('')}
+      </div>
       <button class="leap" type="button" data-ref="leap" data-sfx="none">
         <i class="leap__cd" data-ref="leapCd"></i>
         <b>🐬</b><span data-ref="leapLbl"></span><kbd>E</kbd>
@@ -77,6 +85,16 @@ export class Hud {
     this.r.leap.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       ui.ctx.game?.input?.requestJump();
+    });
+    // abilities (game/Abilities.js): one button each, the same action as Q / R / F
+    shield(this.r.abil);
+    this.abilBtns = {};
+    this.r.abil.querySelectorAll('[data-abil]').forEach((b) => {
+      this.abilBtns[b.dataset.abil] = { el: b, cd: b.querySelector('.abil__cd'), lock: b.querySelector('.abil__lock'), name: b.querySelector('.abil__name'), key: '' };
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        ui.ctx.game?.input?.requestAbility(b.dataset.abil);
+      });
     });
 
     this.dispVol = 0;
@@ -154,6 +172,47 @@ export class Hud {
     while (this.feedItems.length > 5) this.feedItems.pop().el.remove();
     requestAnimationFrame(() => el.classList.add('is-in'));
     if (this.ui.ctx.params.capture) el.classList.add('is-in');
+  }
+
+  /**
+   * HABILIDADES (game/Abilities.js): three buttons that say, at a glance, whether you can use
+   * them now. Dim = recharging (the ring empties), bright = ready but nobody to aim at, glowing
+   * = ready AND a rival is in reach. A locked one shows the level that opens it.
+   */
+  renderAbilities(p, game, touch) {
+    const ab = game.abilities;
+    const eco = this.ui.ctx.services?.economy;
+    const on = !!ab && p.phase === 'flow' && game.state === 'stream';
+    const states = on ? ABILITY_IDS.map((id) => [id, ab.state(p, id)]) : [];
+    // the very first match stays clean: show nothing until something is yours
+    const any = states.some(([, s]) => s.unlocked) || (eco?.stats.matches ?? 0) >= 1;
+    this.r.abil.classList.toggle('is-on', on && any);
+    this.r.abil.classList.toggle('is-touch', !!touch);
+    this.r.abil.classList.toggle('is-drained', !!(p.leechedT > 0));
+    if (!on || !any) return;
+    // first time each ability is ready with someone in reach: say which key, once per profile
+    if (eco) {
+      for (const [id, s] of states) {
+        const flag = `tip:ab:${id}`;
+        if (s.ready && s.target && !eco.flags.seen.includes(flag) && this.hintAge > 2) {
+          eco.markSeen(flag);
+          this.hint(t(`ab.tip.${id}${touch ? 'Touch' : ''}`), 5.5);
+          break;
+        }
+      }
+    }
+    for (const [id, s] of states) {
+      const b = this.abilBtns[id];
+      b.el.classList.toggle('is-locked', !s.unlocked);
+      b.el.classList.toggle('is-cool', s.unlocked && !s.ready);
+      b.el.classList.toggle('is-ready', s.ready && !s.target);
+      b.el.classList.toggle('is-hot', s.ready && s.target);
+      b.cd.style.setProperty('--cd', `${Math.round(s.cd * 360)}deg`);
+      const lock = s.unlocked ? '' : t('ab.lock', { d: s.level });
+      if (b.lock.textContent !== lock) b.lock.textContent = lock;
+      const nm = t(`ab.${id}`);
+      if (b.name.textContent !== nm) b.name.textContent = nm;
+    }
   }
 
   /**
@@ -353,6 +412,7 @@ export class Hud {
       r.surge.classList.toggle('is-active', !!p.surging);
       r.surge.classList.toggle('is-disabled', vol <= SURGE_MIN);
     }
+    this.renderAbilities(p, game, touch);
     // leap: visible while flowing, ring fills while recharging
     const leapOn = p.phase === 'flow' && game.state === 'stream';
     r.leap.classList.toggle('is-on', leapOn);

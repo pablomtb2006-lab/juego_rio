@@ -26,5 +26,6 @@ export class PlayerController {
     s.input.move.set(i.steer, i.forward);
     s.input.surge = s.phase === 'flow' ? i.surge || i.forward > 0.75 : false;
     s.input.jump = s.phase === 'flow' && i.jump;
+    if (s.phase === 'flow' && i.ability) s.input.ability = i.ability;
   }
 }

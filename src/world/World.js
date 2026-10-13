@@ -2,6 +2,7 @@ import { TerrainRenderer } from './terrain/TerrainRenderer.js';
 import { Ocean } from './water/Ocean.js';
 import { Lakes } from './water/Lakes.js';
 import { StreamRenderer } from './water/StreamRenderer.js';
+import { AbilityFx } from './props/AbilityFx.js';
 import { SkyWater } from './water/SkyWater.js';
 import { Vegetation } from './props/Vegetation.js';
 import { Landmarks } from './props/Landmarks.js';
@@ -24,8 +25,9 @@ export class World {
     this.landmarks = new Landmarks(ctx);
     this.forkGates = new ForkGates(ctx);
     this.hazardField = new HazardField(ctx);
+    this.abilityFx = new AbilityFx(ctx);
     this.streams = new StreamRenderer(ctx);
-    this.parts = [this.terrainRenderer, this.ocean, this.lakes, this.skyWater, this.vegetation, this.landmarks, this.forkGates, this.hazardField, this.streams];
+    this.parts = [this.terrainRenderer, this.ocean, this.lakes, this.skyWater, this.vegetation, this.landmarks, this.forkGates, this.hazardField, this.abilityFx, this.streams];
   }
 
   async init(onProgress = () => {}) {

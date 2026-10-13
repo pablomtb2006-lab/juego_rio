@@ -29,6 +29,7 @@ export const PROP_UNIFORMS = {
   uThin: { value: new THREE.Vector2(2500, 7000) }, // far thinning start / end distance
   uFocus: { value: new THREE.Vector4(0, 0, 0, 0) }, // xyz = what the camera looks at (stream head), w = on
   uOccRadius: { value: 6 },
+  uAhead: { value: new THREE.Vector4(0, 0, 0, 0) }, // xyz = a point down the valley ahead of the head, w = on
   ...BIOME_UNIFORMS, // game/biomes.js — the props follow the island's biome
 };
 
@@ -160,6 +161,7 @@ uniform float uStrata;
 uniform float uTranslucency;
 uniform vec4 uFocus;
 uniform float uOccRadius;
+uniform vec4 uAhead;
 varying vec3 vPropWorld;
 varying float vPropWind;
 float propBayer(vec2 p) {
@@ -197,6 +199,15 @@ const OCCLUDE = /* glsl */ `
       vec3 cp = cameraPosition + ab * clamp(t, 0.0, 1.0);
       float seg = (1.0 - smoothstep(uOccRadius * 0.5, uOccRadius, distance(vPropWorld, cp))) * step(0.0, t) * (1.0 - smoothstep(0.85, 0.98, t));
       hide = max(hide, seg);
+      // …and the corridor AHEAD of the head: nothing grows in the line you are about to race
+      // down, so a trap, a wall's warning rune or a rival is seen with road left to steer
+      if (uAhead.w > 0.5) {
+        vec3 ab2 = uAhead.xyz - uFocus.xyz;
+        float t2 = clamp(dot(vPropWorld - uFocus.xyz, ab2) / max(dot(ab2, ab2), 1.0), 0.0, 1.0);
+        float dc = distance(vPropWorld.xz, uFocus.xz + ab2.xz * t2);
+        float seg2 = (1.0 - smoothstep(6.0, 13.0, dc)) * (1.0 - smoothstep(0.82, 1.0, t2));
+        hide = max(hide, seg2);
+      }
     }
     if (hide > propBayer(gl_FragCoord.xy)) discard;
   }
@@ -290,6 +301,7 @@ function patch(shader, mat, isDepth) {
     uSnowAmount: mat.userData.uSnowAmount,
     uFocus: U.uFocus,
     uOccRadius: U.uOccRadius,
+    uAhead: U.uAhead,
     uStrata: mat.userData.uStrata,
     uTranslucency: mat.userData.uTranslucency,
   });

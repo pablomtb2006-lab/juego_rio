@@ -10,9 +10,11 @@ import { HAZARD_TYPES } from '../../game/Hazards.js';
  *
  * Each type is drawn procedurally from its index, so there are no textures to load:
  *   0 lava · 1 geyser · 2 sand · 3 sinkhole · 4 sun · 5 ice · 6 rocks · 7 steam
+ *   (8 wall warning · 9 lock-on reticle are not hazards: they are drawn for game/Abilities.js)
  */
 const KIND_INDEX = Object.fromEntries(Object.keys(HAZARD_TYPES).map((k, i) => [k, i]));
 const RING = 28; // disc tessellation
+const MARKS_CAP = 40; // ability warning runes + the lock-on reticle
 const RINGS = 5;
 
 const VERT = /* glsl */ `
@@ -32,6 +34,9 @@ void main() {
   vec2 xz = iInfo.xy + position.xz * iInfo.z;
   // a hair above the ground so it never z-fights, and it follows every bump
   vec3 wp = vec3(xz.x, terrainHeight(xz) + 0.35, xz.y);
+#ifdef MARKS
+  wp.y += 1.6; // the warning runes sit on the river's surface, not under it
+#endif
   vWorldPos = wp;
   gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);
 }
@@ -101,6 +106,25 @@ void main() {
     float g = step(0.62, vnoise(p * 9.0 + vPhase));
     col = mix(vec3(0.33, 0.30, 0.27), vec3(0.58, 0.54, 0.49), g);
     a *= 0.9;
+  } else if (k == 8) {
+    // wall warning (game/Abilities.js): a hazard-striped rune that tightens as the slam lands.
+    // vPhase carries the progress 0..1 here, not a random phase
+    float prog = clamp(vPhase, 0.0, 1.0);
+    float ring = 1.0 - smoothstep(0.0, 0.13, abs(r - (0.95 - 0.5 * prog)));
+    float stripe = step(0.5, fract((vUv.x + vUv.y) * 4.5 - t * 2.4));
+    col = mix(vec3(2.4, 0.75, 0.18), vec3(2.6, 0.12, 0.06), stripe);
+    float fill = (0.1 + 0.28 * prog) * (1.0 - smoothstep(0.55, 1.0, r));
+    a = (fill + ring * (0.5 + 0.5 * prog)) * (1.0 - smoothstep(0.92, 1.0, r));
+    a *= 0.75 + 0.25 * sin(t * (10.0 + 14.0 * prog));
+    glow = 0.9 * ring;
+  } else if (k == 9) {
+    // lock-on reticle: four rotating brackets round the rival you are about to hit
+    float ang = atan(vUv.y, vUv.x) + vPhase * 6.2831;
+    float brackets = smoothstep(0.35, 0.7, abs(sin(ang * 2.0)));
+    float ring = 1.0 - smoothstep(0.0, 0.075, abs(r - 0.86));
+    col = vec3(2.2, 2.0, 1.2);
+    a = ring * (0.25 + 0.75 * brackets);
+    glow = 0.7;
   } else {
     // steam: a soft cloud sitting on the ground
     float n = fbm2(p * 1.2 + vec2(t * 0.3, t * 0.18));
@@ -108,6 +132,9 @@ void main() {
     a *= (0.3 + 0.35 * n) * (1.0 - smoothstep(0.1, 1.0, r));
   }
 
+#ifdef MARKS
+  a *= 1.0 - smoothstep(280.0, 440.0, distance(cameraPosition, vWorldPos));
+#endif
   col = applyAtmosphere(col, vWorldPos);
   col += col * glow * 0.5;
   if (!(a > 0.01)) discard;
@@ -166,6 +193,33 @@ export class HazardField {
       depthWrite: false,
       side: THREE.DoubleSide,
     });
+    // the ability marks (game/Abilities.js) get their own little mesh: they must read THROUGH the
+    // river surface and the trees (a warning you cannot see is not a warning), so no depth test
+    const mgeo = new THREE.InstancedBufferGeometry();
+    mgeo.setAttribute('position', geo.getAttribute('position'));
+    mgeo.setIndex(geo.getIndex());
+    this.mInfo = new THREE.InstancedBufferAttribute(new Float32Array(MARKS_CAP * 4), 4);
+    this.mPhase = new THREE.InstancedBufferAttribute(new Float32Array(MARKS_CAP * 2), 2);
+    mgeo.setAttribute('iInfo', this.mInfo);
+    mgeo.setAttribute('iPhase', this.mPhase);
+    mgeo.instanceCount = 0;
+    mgeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6);
+    const mmat = new THREE.ShaderMaterial({
+      name: 'AbilityMarks',
+      uniforms: mat.uniforms,
+      vertexShader: VERT,
+      fragmentShader: FRAG,
+      defines: { MARKS: 1 },
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      side: THREE.DoubleSide,
+    });
+    this.marks = new THREE.Mesh(mgeo, mmat);
+    this.marks.frustumCulled = false;
+    this.marks.renderOrder = 6;
+    this.group.add(this.marks);
+
     this.mesh = new THREE.Mesh(geo, mat);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 2;
@@ -192,42 +246,55 @@ export class HazardField {
   }
 
   /**
-   * The lava front of game/Catastrophe.js, drawn as a line of overlapping lava discs in the
-   * instances left over above the hazard list — same shader, same terrain hugging, no extra
-   * draw call. Only the slots over land are filled, so the sea stays clean.
+   * Everything that is drawn with the hazard shader but is not a hazard, in the instances left
+   * over above the hazard list — same shader, same terrain hugging, no extra draw call:
+   *   - the lava front of game/Catastrophe.js (a line of lava discs; only the slots over land)
+   *   - the marks of game/Abilities.js (wall warning runes, the lock-on reticle)
    */
-  syncFront() {
-    const cat = this.ctx.game?.catastrophe;
-    const front = cat?.active ? cat.front : null;
+  syncExtras() {
+    const game = this.ctx.game;
     const base = this.hazCount ?? 0;
     const room = this.cap - base;
-    if (!front || room <= 0) {
-      if (this._frontN) {
-        this._frontN = 0;
-        this.mesh.geometry.instanceCount = base;
-      }
-      return;
-    }
+    if (room <= 0) return;
     const { terrain } = this.ctx;
-    const d = front.dir;
-    const px = -d.y;
-    const pz = d.x;
-    const R = 150;
-    const step = R * 1.25;
-    const cx = d.x * front.at;
-    const cz = d.y * front.at;
     let k = 0;
-    for (let i = -Math.floor(room / 2); k < room && i <= Math.floor(room / 2); i++) {
-      const u = i * step;
-      const x = cx + px * u;
-      const z = cz + pz * u;
-      if (!terrain.isLand(x, z)) continue;
-      const j = base + k;
-      this.info.setXYZW(j, x, z, R, 0); // kind 0 = lava
-      this.phase.setXY(j, (i * 0.37) % 1, 5);
-      k++;
+
+    const front = game?.catastrophe?.active ? game.catastrophe.front : null;
+    if (front) {
+      const d = front.dir;
+      const px = -d.y;
+      const pz = d.x;
+      const R = 150;
+      const step = R * 1.25;
+      const cx = d.x * front.at;
+      const cz = d.y * front.at;
+      const frontRoom = room;
+      for (let i = -Math.floor(frontRoom / 2); k < frontRoom && i <= Math.floor(frontRoom / 2); i++) {
+        const x = cx + px * i * step;
+        const z = cz + pz * i * step;
+        if (!terrain.isLand(x, z)) continue;
+        const j = base + k;
+        this.info.setXYZW(j, x, z, R, 0); // kind 0 = lava
+        this.phase.setXY(j, (i * 0.37) % 1, 5);
+        k++;
+      }
     }
-    this._frontN = k;
+
+    const marks = game?.abilities?.marks ?? [];
+    const nm = Math.min(marks.length, MARKS_CAP);
+    for (let i = 0; i < nm; i++) {
+      const m = marks[i];
+      this.mInfo.setXYZW(i, m.x, m.z, m.r, m.kind);
+      this.mPhase.setXY(i, m.p, 5);
+    }
+    if (nm || this.marks.geometry.instanceCount) {
+      this.mInfo.needsUpdate = true;
+      this.mPhase.needsUpdate = true;
+      this.marks.geometry.instanceCount = nm;
+    }
+
+    if (k === 0 && !this._extraN) return;
+    this._extraN = k;
     this.info.needsUpdate = true;
     this.phase.needsUpdate = true;
     this.mesh.geometry.instanceCount = base + k;
@@ -239,6 +306,6 @@ export class HazardField {
       this.build();
     }
     this.sync();
-    this.syncFront();
+    this.syncExtras();
   }
 }

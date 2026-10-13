@@ -3,6 +3,11 @@
  * created on the first user gesture, honouring the sfx/master volume and ad/pause muting.
  */
 const PRESETS = {
+  // abilities (game/Abilities.js): a thud, a rising slurp, a hiss, a refusal
+  wall: [[70, 0.3, 'sawtooth', 0.32], [48, 0.45, 'sine', 0.5, 0.02], [210, 0.09, 'square', 0.1]],
+  leech: [[320, 0.28, 'sine', 0.14], [470, 0.3, 'sine', 0.12, 0.12], [680, 0.34, 'sine', 0.1, 0.26]],
+  fog: [[240, 0.5, 'triangle', 0.1], [170, 0.65, 'sine', 0.09, 0.08]],
+  deny: [[150, 0.12, 'square', 0.14], [110, 0.14, 'square', 0.12, 0.09]],
   tap: [[520, 0.035, 'triangle', 0.18]],
   open: [[420, 0.05, 'triangle', 0.16], [640, 0.07, 'triangle', 0.14, 0.04]],
   back: [[520, 0.05, 'triangle', 0.14], [380, 0.07, 'triangle', 0.12, 0.04]],

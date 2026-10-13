@@ -258,11 +258,25 @@ export class AIController {
       const urgency = THREE.MathUtils.clamp(1 - Math.hypot(dx, dz) / 170, 0, 1);
       target += (side > 0 ? 1 : -1) * urgency * (0.5 + this.traits.caution * 0.6);
     }
+    // a wall slammed across the valley (game/Abilities.js): the bots see its warning rune and
+    // react to it — late and not always, like a person would — by steering round or hopping it
+    const wall = game.abilities?.wallAhead(s, 170);
+    if (wall && this.rand() < 0.04 + 0.5 * this.traits.react) {
+      const dx = wall.x - s.pos.x;
+      const dz = wall.z - s.pos.z;
+      const lat = -dx * wall.dirz + dz * wall.dirx; // + = the wall's centre is to our right across the valley
+      const d = Math.hypot(dx, dz);
+      const urgency = THREE.MathUtils.clamp(1 - d / 170, 0.2, 1);
+      target += (lat > 0 ? -1 : 1) * urgency * 0.9;
+      if (d < 70 && s.leapCool <= 0) s.wantLeap = true;
+    }
     target += Math.sin(this.wander * 1.3) * 0.08;
+    // blinded by steam: it veers all over the place and cannot kick
+    if (s.fogT > 0) target += Math.sin(game.time * 3.4 + s.id * 1.7) * 0.85;
     this.steer += (target - this.steer) * Math.min(1, dt * 5);
     s.input.steer = THREE.MathUtils.clamp(this.steer, -1, 1);
     s.input.move.set(s.input.steer, 0);
-    s.input.surge = this.decideSurge(dt, game);
+    s.input.surge = s.fogT > 0 ? false : this.decideSurge(dt, game);
 
     // leap: over a dam that blocks us, out of a dead end, or a bully pouncing on its prey
     let jump = !!s.wantLeap;

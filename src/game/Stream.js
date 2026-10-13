@@ -125,13 +125,20 @@ export class Stream {
     this.kills = 0;
     this.cuts = 0;
     this.absorbedTotal = 0;
-    this.input = { steer: 0, move: new THREE.Vector2(), surge: false, jump: false };
+    this.input = { steer: 0, move: new THREE.Vector2(), surge: false, jump: false, ability: null };
     // leap: the river throws itself into the air to hop a ridge or a dam (see StreamPhysics.leap)
     this.leaping = false;
     this.leapVy = 0;
     this.leapCool = 0;
     this.leapCooldown = 9; // s, reduced by upgrades
     this.leapPower = 1; // upgrades
+    // abilities (game/Abilities.js): cooldown seconds per ability, and what is happening to us
+    this.abil = { wall: 0, leech: 0, fog: 0 };
+    this.abilityCoolMul = 1; // upgrades
+    this.leechT = 0;
+    this.leechTarget = null;
+    this.leechedT = 0; // > 0 while someone is drinking us
+    this.fogT = 0; // > 0 while we are blinded / disoriented
     this.upgrades = null;
   }
 

@@ -28,6 +28,9 @@ const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
  *   playerShield: number, // extra margin a rival needs before it can cut the PLAYER
  *   playerEvap: number,   // multiplier on the player's own evaporation
  *   playerHazard: number, // multiplier on what the terrain's traps take off the player
+ *   abilityAI: boolean,   // bots throw walls / leeches / steam at all
+ *   abilityRate: number,  // how readily they do
+ *   abilityVsPlayer: number, // multiplier on their readiness when the target is you
  * }}
  */
 export function difficultyFor(matches = 0) {
@@ -52,6 +55,11 @@ export function difficultyFor(matches = 0) {
     playerShield: 2.3 - 0.5 * level,
     playerEvap: 0.7 + 0.05 * level,
     playerHazard: 0.6 + 0.15 * level,
+    // Bots only start throwing things once you have a few matches behind you, and they are
+    // gentler with YOU than with each other (the pressure budget in Abilities.js caps it too).
+    abilityAI: level >= 0.4,
+    abilityRate: 0.6 + 0.4 * level,
+    abilityVsPlayer: 0.35 + 0.4 * level,
   };
 }
 

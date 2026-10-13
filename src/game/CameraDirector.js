@@ -370,6 +370,8 @@ export class CameraDirector {
     // aim short of the far point: the camera reads the whole valley, but your own head still
     // sits in the lower third of the frame where you can steer by it
     const lp = path[Math.min(path.length - 1, Math.round((lookDist * 0.58) / 8))] ?? ahead;
+    // the far end of the predicted path: the vegetation clears a corridor down to it (Vegetation.updateFocus)
+    this.aheadPt = aerial ? null : (path[path.length - 1] ?? ahead);
     this.desiredLook.set(lp.x, Math.min(lp.y, s.pos.y) + r * 0.25 + (aerial ? -8 : 6), lp.z);
     if (sk > 0.01 && this.swallow) {
       this.desiredLook.x += (this.swallow.x - this.desiredLook.x) * sk * 0.55;

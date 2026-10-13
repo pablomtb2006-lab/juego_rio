@@ -94,7 +94,7 @@ Orden por dependencia e impacto. Cada tramo se termina, se prueba y se sube ante
 | **B** | **Rutas libres y bifurcaciones** ✅ | Giro de 89° que suelta el agarre del valle · cruce de collados con impulso · 4 bifurcaciones señalizadas por mapa con puertas de colores y aviso en el HUD |
 | **C** | **Peligros aleatorios** ✅ | 260 peligros por partida (lava, géiseres, arena seca, sumideros, calor, hielo, rocas, vapor) colocados sobre las rutas reales del agua y amontonados en los ramales cortos · zona de caída centrada en el arco para que todos se crucen |
 | **D** | **Catástrofe anunciada** ✅ | Un evento por carrera, anunciado con 9-13 s de cuenta atrás: avalancha de lava (frente que barre la montaña por detrás), tormenta de polvo, terremoto (rompe todas las presas), diluvio, ola de calor, granizada, eclipse. No todos castigan: el diluvio y el eclipse son los que permiten remontar |
-| **E** | **Habilidades ofensivas** | Muro, sanguijuela, sequía, niebla… con recarga, desbloqueadas por nivel; la IA también las usa |
+| **E** | **Habilidades ofensivas** ✅ | Muro (Q), Succión (R) y Vapor (F), con recarga y coste en litros, desbloqueadas por nivel (1/2/3); la IA las usa con las mismas reglas · runa de aviso, mira de objetivo, pilares de roca, hilo de succión y vapor · mejora «Tácticas» · objetivo de partida |
 | **F** | **Crecimiento visible** | La estela y la ola crecen de verdad con los litros; hitos visuales al crecer |
 | **G** | **Variantes del mapa** ✅ | 6 mundos sobre la misma geometría (Valle Templado, Alba Dorada, Valle Helado, La Caldera, Selva Crecida, La Tormenta): cambian hora del día, cielo, niebla, color del suelo y la vegetación, nieve, brasas, qué trampas crecen, el agarre, la evaporación y el caudal de los valles · el lobby anuncia el próximo mundo y tu récord en él |
 | **H** | **Progresión y cosméticos** | Nivel con puntos · sombreros, caras, estelas · retos diarios y semanales · racha, clasificación, mejor tiempo · botón de venganza |
@@ -151,6 +151,30 @@ en qué mundo vas a caer antes de darle a jugar**, con tu récord en él (`SIN E
 
 ---
 
+## 2.cuater Habilidades (Tramo E): verbos contra los otros ríos
+
+Hasta ahora todo lo que podías hacer era contra la isla (girar, acelerar, saltar). Estas tres son
+contra los **otros ríos**, y cada una es un problema distinto para quien la recibe:
+
+| | Qué hace | Cómo se esquiva |
+|---|---|---|
+| 🪨 **Muro** (Q · nivel 1) | Columnas de roca que brotan cruzando el valle **delante** del rival. Aguanta a cualquiera más pequeño que ~0,9× tú; uno más grande lo revienta | La runa roja avisa 1 s antes: gira, salta (E) por encima o sé más grande |
+| 🌀 **Succión** (R · nivel 2) | Un hilo violeta que le bebe ~3,6%/s de su agua durante 4,6 s y te da el 65% | Aléjate más de 235 m, salta, o que se le acabe |
+| ☁️ **Vapor** (F · nivel 3) | Una nube sobre el rival: si eres tú, te ciega; si es un bot, da bandazos y no puede acelerar | Mantener la línea a ciegas (o tener la mejora de Resistencia, que no ayuda: es puro temple) |
+
+Cuestan litros (5/3/4%) y tienen recarga (15/21/23 s), así que **usarlas es una decisión**, no un
+botón que se aporrea. La IA las usa con las mismas reglas y recargas un 45% más lentas, entre ellos
+y contra ti. Para que una manada de bots no te encadene, hay un **presupuesto de presión**: como mucho
+2 lanzamientos de bots contra ti cada 14 s (`PRESSURE` en `Abilities.js`).
+
+Lo que lo hace AAA y no un menú de efectos: el aviso se pinta **encima** del agua y del follaje (si no
+lo ves, no es un aviso), la **mira dorada** te dice a quién vas a dar antes de pulsar, los pilares
+brotan en onda desde el centro con salpicadura y temblor de cámara, el hilo de succión es violeta
+(el complementario del agua turquesa, se lee sobre río, cielo y pinos) con gotas viajando hacia ti, y
+la vegetación se aparta en un **corredor por delante** de tu cabeza para que veas lo que viene.
+
+---
+
 ## 3. Estado
 
 | Tramo | Estado |
@@ -159,7 +183,7 @@ en qué mundo vas a caer antes de darle a jugar**, con tu récord en él (`SIN E
 | B — Rutas y bifurcaciones | **hecho** |
 | C — Peligros aleatorios | **hecho** |
 | D — Catástrofe anunciada | **hecho** |
-| E — Habilidades | pendiente |
+| E — Habilidades | **hecho** |
 | F — Crecimiento visible | pendiente |
 | G — Variantes del mapa | **hecho** |
 | H — Progresión y cosméticos | pendiente |

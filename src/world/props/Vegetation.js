@@ -227,7 +227,13 @@ export class Vegetation {
     if (dir && s && dir.mode === 'chase' && s.pos) {
       F.set(s.pos.x, s.pos.y + 2, s.pos.z, 1);
       PROP_UNIFORMS.uOccRadius.value = Math.max(5, (s.radius ?? 5) * 1.2 + 3);
-    } else F.w = 0;
+      const a = dir.aheadPt;
+      if (a) PROP_UNIFORMS.uAhead.value.set(a.x, a.y + 2, a.z, 1);
+      else PROP_UNIFORMS.uAhead.value.w = 0;
+    } else {
+      F.w = 0;
+      PROP_UNIFORMS.uAhead.value.w = 0;
+    }
   }
 
   update(dt, time) {

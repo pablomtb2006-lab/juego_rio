@@ -40,6 +40,14 @@ export const UPGRADES = [
     },
   },
   {
+    id: 'tactics',
+    icon: '🪨',
+    name: { es: 'Tácticas', en: 'Tactics' },
+    desc: { es: 'Muro, succión y vapor recargan un 8% antes', en: 'Wall, leech and steam recharge 8% faster' },
+    costs: [200, 450, 900, 1600, 2600],
+    apply: (s, l) => (s.abilityCoolMul = Math.max(0.55, 1 - 0.08 * l)),
+  },
+  {
     id: 'resist',
     icon: '🛡️',
     name: { es: 'Resistencia', en: 'Endurance' },

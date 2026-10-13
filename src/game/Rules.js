@@ -219,6 +219,7 @@ export class Rules {
       game.obstacles?.check(s, dt);
       game.hazards?.check(s, dt);
       game.catastrophe?.check(s, dt);
+      game.abilities?.check(s, dt);
       if (s.blinded) s.blinded = Math.max(0, s.blinded - dt * 1.6);
       if (s.leaping) continue; // airborne: rivers below can't block you
       this.channels(s, dt);

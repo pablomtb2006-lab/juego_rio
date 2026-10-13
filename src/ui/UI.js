@@ -25,6 +25,7 @@ import { Result } from './screens/Result.js';
 import { Pause } from './screens/Pause.js';
 import { UiSynth } from './UiSynth.js';
 import { rank } from './hud/Minimap.js';
+import { ABILITIES } from '../game/Abilities.js';
 
 const MENU_SCREENS = ['lobby', 'locker', 'shop', 'upgrades', 'settings'];
 const NAME_SEEDS = ['splash', 'gota', 'brook', 'arroyo', 'drizzle', 'cascada', 'ripple', 'torrente'];
@@ -181,6 +182,37 @@ export class UI {
       vibrate(this.ctx, [60, 40, 60]);
     });
     bus.on('droughtSweep', () => this.checkAlive());
+    // HABILIDADES (game/Abilities.js)
+    bus.on('ability', ({ kind, caster, target }) => {
+      const p = this.ctx.game.player;
+      const icon = { wall: 'mountain', leech: 'drop', fog: 'bolt' }[kind];
+      if (caster === p) {
+        this.sfx(kind);
+        this.callouts.float(`${ABILITIES[kind].icon} ${t(`ab.${kind}`)}`, { kind: 'gold', y: 0.8 });
+        vibrate(this.ctx, [40]);
+      } else if (target === p) {
+        const key = `co.ab${kind[0].toUpperCase()}${kind.slice(1)}`;
+        this.callouts.show(t(key, { name: caster.name }), { priority: 4, hold: 2.2 });
+        this.sfx('error');
+        vibrate(this.ctx, [60, 40, 60]);
+      }
+      if (caster === p || target === p) this.hud.feed(caster, `feed.${kind}`, target, icon);
+    });
+    bus.on('abilityDenied', ({ kind, reason }) => {
+      const key = reason === 'locked' ? 'ab.locked' : reason === 'volume' ? 'ab.lowWater' : reason === 'target' ? 'ab.noTarget' : null;
+      if (!key) return;
+      if (reason !== 'target' || !this._denyT || performance.now() - this._denyT > 700) {
+        this._denyT = performance.now();
+        this.toast(t(key, { d: ABILITIES[kind].unlock }));
+        this.sfx('deny');
+      }
+    });
+    bus.on('wallBlocked', ({ stream }) => {
+      if (stream === this.ctx.game.player) this.callouts.show(t('co.wallBlocked'), { priority: 3, hold: 1.8 });
+    });
+    bus.on('wallBreak', ({ stream }) => {
+      if (stream === this.ctx.game.player) this.callouts.float(t('co.wallBreak'), { kind: 'gold' });
+    });
     // EL MUNDO DE HOY (game/biomes.js): name the island you are falling into
     bus.on('phase', ({ state }) => {
       if (state !== 'drop') return;

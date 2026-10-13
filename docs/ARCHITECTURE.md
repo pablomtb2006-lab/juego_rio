@@ -73,6 +73,15 @@ objetivo del arco). Todo el que lea la zona de caída debe leer `game.dropZone`,
 El frente de lava es una recta perpendicular a `game.raceDir` que avanza: `frontGap(s)` da los
 metros que le sacas. `world/props/HazardField.js` lo dibuja con los instances que sobran.
 
+**Habilidades** (`game/Abilities.js`): `ABILITIES` (muro, succión, vapor), `abilities.cast(s, id, T?)`,
+`abilities.state(s, id)` para el HUD, `abilities.check(s, dt)` (los muros bloquean como presas, lo llama
+`Rules`), `abilities.walls[]`, `abilities.marks[]` (runa de aviso = tipo 8, mira = tipo 9, las pinta
+`HazardField` sin test de profundidad), `abilities.lock` (el rival al que apunta el jugador).
+Campos del río: `abil{wall,leech,fog}`, `leechT/leechTarget`, `leechedT`, `fogT`, `abilityCoolMul`.
+Entrada: Q/R/F, botones del HUD, mando (X, LB, RB) → `input.ability` → `s.input.ability`.
+Eventos: `ability`, `abilityDenied`, `wallBreak`, `wallBlocked`, `leechEnd`.
+Render: `world/props/AbilityFx.js` (pilares, hilo, vapor). URL `?abilities=all` desbloquea las tres.
+
 **Bioma** (`game/biomes.js`): `game.biome` (sorteado en `startMatch` antes que nada) y
 `game.nextBiome` (el de la siguiente partida, para el lobby). Cambia hora del día, tinte del suelo
 y del cielo, nieve, brasas, velo, pesos de peligros, agarre, evaporación y caudal. Todo material que
